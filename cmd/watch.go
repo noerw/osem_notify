@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -34,14 +33,18 @@ var watchBoxesCmd = &cobra.Command{
 	Long:  "specify box IDs to watch them for events",
 	Args:  BoxIdValidator,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		exec := func() error {
-			notifications, err := core.CheckNotifications(args, defaultConf)
+			results, err := CheckBoxes(args, defaultConf)
 			if err != nil {
-				return fmt.Errorf("error checking for notifications: ", err)
+				return err
 			}
-			fmt.Println(notifications)
 
-			// logNotifications(notifications)
+			results, err = filterFromCache(results)
+			if err != nil {
+				return err
+			}
+
 			if shouldNotify {
 				// TODO
 			}
@@ -59,7 +62,17 @@ var watchBoxesCmd = &cobra.Command{
 				return err
 			}
 		}
-
-		return nil
 	},
+}
+
+func filterFromCache(results []core.CheckResult) ([]core.CheckResult, error) {
+	// get results from cache. they are indexed by ______
+
+	// filter, so that only changed result.Status remain
+
+	// extract additional results with Status ERR from cache with time.Since(lastNotifyDate) > thresh
+
+	// upate cache set lastNotifyDate to Now()
+
+	return results, nil
 }

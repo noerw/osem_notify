@@ -2,8 +2,9 @@ package core
 
 import (
 	"errors"
-	"github.com/dghubble/sling"
 	"net/http"
+
+	"github.com/dghubble/sling"
 )
 
 type OsemError struct {
@@ -31,4 +32,4 @@ func (client *OsemClient) GetBox(boxId string) (Box, error) {
 	return box, nil
 }
 
-var osem = NewOsemClient(&http.Client{}) // default client
+var Osem = NewOsemClient(&http.Client{}) // default client

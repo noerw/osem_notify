@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"../core"
-	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +21,11 @@ var checkBoxCmd = &cobra.Command{
 	Long:  "specify box IDs to check them for events",
 	Args:  BoxIdValidator,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		notifications, err := core.CheckNotifications(args, defaultConf)
+		cmd.SilenceUsage = true
+		_, err := CheckBoxes(args, defaultConf)
 		if err != nil {
-			return fmt.Errorf("error checking for notifications:", err)
+			return err
 		}
-		fmt.Println(notifications)
-
-		// logNotifications(notifications)
 		if shouldNotify {
 			// TODO
 		}

@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"../core"
 	"fmt"
-	"github.com/spf13/cobra"
 	"regexp"
+
+	"../core"
+	"github.com/spf13/cobra"
 )
 
 func isValidBoxId(boxId string) bool {
@@ -27,19 +28,15 @@ func BoxIdValidator(cmd *cobra.Command, args []string) error {
 
 // TODO: actually to be read from arg / file
 var defaultConf = &core.NotifyConfig{
-	// Transports: struct {
-	// 	Slack: SlackConfig{
-	// 		Channel: "asdf"
-	// 		Token: "qwer"
-	// 	}
-	// },
 	Events: []core.NotifyEvent{
 		core.NotifyEvent{
-			Type:      "measurementAge",
-			Target:    "593bcd656ccf3b0011791f5d",
-			Threshold: "5h",
+			Type:      "measurement_age",
+			Target:    "all",
+			Threshold: "15m",
+		},
+		core.NotifyEvent{
+			Type:   "measurement_suspicious",
+			Target: "all",
 		},
 	},
 }
-
-// func parseNotifyConfig(conf string) NotifyConfig, error {}
