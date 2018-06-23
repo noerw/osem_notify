@@ -1,4 +1,10 @@
-package main
+package core
+
+type NotifyEvent struct {
+	Type      string `json:"type"`
+	Target    string `json:"target"`
+	Threshold string `json:"threshold"`
+}
 
 type NotifyConfig struct {
 	// Transports interface{} `json:"transports"`

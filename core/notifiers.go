@@ -1,4 +1,4 @@
-package main
+package core
 
 type AbstractNotifier interface {
 	GetName() string
@@ -12,9 +12,3 @@ type Notification struct {
 
 // TODO: multiple transports? one transport per event? (??)
 type SlackConfig struct{}
-
-type NotifyEvent struct {
-	Type      string `json:"type"`
-	Target    string `json:"target"`
-	Threshold string `json:"threshold"`
-}
