@@ -43,14 +43,14 @@ go get -v -d ./
 go build ./
 mv osem_notify dist/osem_notify_${release}_mac64
 
-export GOOS=linux
-export GOARCH=arm
-go get -v -d ./
-go build ./
-mv osem_notify dist/osem_notify_${release}_linux_arm
+# export GOOS=linux
+# export GOARCH=arm
+# go get -v -d ./
+# go build ./
+# mv osem_notify dist/osem_notify_${release}_linux_arm
 
-export GOOS=android
-export GOARCH=arm
-go get -v -d ./
-go build ./
-mv osem_notify dist/osem_notify_${release}_android
+# export GOOS=android
+# export GOARCH=arm
+# go get -v -d ./
+# go build ./
+# mv osem_notify dist/osem_notify_${release}_android
