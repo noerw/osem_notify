@@ -28,7 +28,7 @@ var watchBoxesCmd = &cobra.Command{
 	Long:  "specify box IDs to watch them for events",
 	Args:  BoxIdValidator,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		ticker = time.NewTicker(time.Duration(watchInterval) * time.Second).C
+		ticker = time.NewTicker(time.Duration(watchInterval) * time.Minute).C
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
