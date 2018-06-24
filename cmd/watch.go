@@ -32,13 +32,13 @@ var watchBoxesCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		err := checkAndNotify(args, defaultConf)
+		err := checkAndNotify(args)
 		if err != nil {
 			return err
 		}
 		for {
 			<-ticker
-			err = checkAndNotify(args, defaultConf)
+			err = checkAndNotify(args)
 			if err != nil {
 				return err
 			}

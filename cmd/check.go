@@ -22,6 +22,6 @@ var checkBoxCmd = &cobra.Command{
 	Args:  BoxIdValidator,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		return checkAndNotify(args, defaultConf)
+		return checkAndNotify(args)
 	},
 }

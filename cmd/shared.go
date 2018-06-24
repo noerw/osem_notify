@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"../core"
 )
@@ -12,29 +13,6 @@ import (
 /**
  * shared functionality between watch and check
  */
-
-// TODO: actually to be read from arg / file
-
-var defaultConf = &core.NotifyConfig{
-	Notifications: core.TransportConfig{
-		Transport: "email",
-		Options: core.EmailNotifier{
-			[]string{"test@nroo.de"},
-			"notify@nroo.de",
-		},
-	},
-	Events: []core.NotifyEvent{
-		core.NotifyEvent{
-			Type:      "measurement_age",
-			Target:    "all",
-			Threshold: "15m",
-		},
-		core.NotifyEvent{
-			Type:   "measurement_suspicious",
-			Target: "all",
-		},
-	},
-}
 
 func isValidBoxId(boxId string) bool {
 	// boxIds are UUIDs
@@ -54,15 +32,21 @@ func BoxIdValidator(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func checkAndNotify(boxIds []string, defaultNotifyConf *core.NotifyConfig) error {
-	results, err := core.CheckBoxes(boxIds, defaultConf)
+func checkAndNotify(boxIds []string) error {
+	defaultNotifyConf := &core.NotifyConfig{}
+	err := viper.UnmarshalKey("defaultHealthchecks", defaultNotifyConf)
+	if err != nil {
+		return err
+	}
+
+	results, err := core.CheckBoxes(boxIds, defaultNotifyConf)
 	if err != nil {
 		return err
 	}
 
 	results.Log()
 
-	if shouldNotify {
+	if viper.GetBool("notify") {
 		return results.SendNotifications()
 	}
 	return nil

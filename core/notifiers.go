@@ -6,6 +6,8 @@ import (
 	"net/smtp"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 var notifiers = map[string]AbstractNotifier{
@@ -23,21 +25,20 @@ type Notification struct {
 	subject string
 }
 
+// box config required for the EmailNotifier
 type EmailNotifier struct {
-	Recipients  []string
-	FromAddress string
+	Recipients []string
 }
 
 func (n EmailNotifier) New(config interface{}) (AbstractNotifier, error) {
 	res, ok := config.(EmailNotifier)
 
-	if !ok || res.Recipients == nil || res.FromAddress == "" {
+	if !ok || res.Recipients == nil {
 		return nil, errors.New("Invalid EmailNotifier options")
 	}
 
 	return EmailNotifier{
-		Recipients:  res.Recipients,
-		FromAddress: res.FromAddress,
+		Recipients: res.Recipients,
 	}, nil
 }
 
@@ -55,24 +56,22 @@ func (n EmailNotifier) ComposeNotification(box *Box, checks []CheckResult) Notif
 }
 
 func (n EmailNotifier) Submit(notification Notification) error {
-	// Set up authentication information. TODO: load from config
 	auth := smtp.PlainAuth(
 		"",
-		"USERNAME",
-		"PASSWORD",
-		"SERVER",
+		viper.GetString("email.user"),
+		viper.GetString("email.pass"),
+		viper.GetString("email.host"),
 	)
 
-	fromAddress := "EXAMPLE@EXAMPLE.COM"
-	from := fmt.Sprintf("openSenseMap Notifier <%s>", fromAddress)
-	body := fmt.Sprintf("From: %s\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s", from, notification.subject, notification.body)
+	from := viper.GetString("email.from")
+	body := fmt.Sprintf("From: openSenseMap Notifier <%s>\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s", from, notification.subject, notification.body)
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
 	err := smtp.SendMail(
-		"smtp.gmx.de:25",
+		fmt.Sprintf("%s:%s", viper.GetString("email.host"), viper.GetString("email.port")),
 		auth,
-		fromAddress,
+		from,
 		n.Recipients,
 		[]byte(body),
 	)

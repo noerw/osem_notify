@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -10,38 +9,19 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:  "osem_notify",
-	Long: "Run healthchecks and send notifications for boxes on opensensemap.org",
+	Use:   "osem_notify",
+	Short: "Root command displaying help",
+	Long:  "Run healthchecks and send notifications for boxes on opensensemap.org",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// set up config environment FIXME: cannot open / write file?!
-		viper.SetConfigType("json")
-		viper.SetConfigFile(".osem_notify")
-		viper.AddConfigPath("$HOME")
-		viper.AddConfigPath(".")
-		// // If a config file is found, read it in.
-		// if _, err := os.Stat(path.Join(os.Getenv("HOME"), ".osem_notify.yml")); err == nil {
-		// 	err := viper.ReadInConfig()
-		// 	if err != nil {
-		// 		fmt.Println("Error when reading config file:", err)
-		// 	}
-		// }
-		viper.SetEnvPrefix("osem_notify")
-		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
-		viper.AutomaticEnv()
-
 		// set up logger
 		log.SetOutput(os.Stdout)
-		switch logLevel {
-		case "debug":
+		if viper.GetBool("debug") {
 			log.SetLevel(log.DebugLevel)
-		case "info":
+			printConfig()
+		} else {
 			log.SetLevel(log.InfoLevel)
-		case "warn":
-			log.SetLevel(log.WarnLevel)
-		case "error":
-			log.SetLevel(log.ErrorLevel)
 		}
-		switch logFormat {
+		switch viper.Get("logformat") {
 		case "json":
 			log.SetFormatter(&log.JSONFormatter{})
 		}
@@ -53,19 +33,33 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var (
-	shouldNotify bool
-	logLevel     string
-	logFormat    string
-)
+// accessed in initConfig(), as it is initialized before config is loaded (sic)
+var cfgFile string
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "info", "log level, can be one of debug, info, warn, error")
-	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "plain", "log format, can be plain or json")
+	var (
+		shouldNotify bool
+		debug        bool
+		logFormat    string
+	)
+
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to config file (default $HOME/.osem_notify.yml)")
+	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
 	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, "if set, will send out notifications.\nOtherwise results are printed to stdout only")
+
+	viper.BindPFlags(rootCmd.PersistentFlags()) // let flags override config
 }
 
 func Execute() {
+	// generate documentation
+	// err := doc.GenMarkdownTree(rootCmd, "./doc")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

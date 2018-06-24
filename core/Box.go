@@ -7,34 +7,34 @@ import (
 )
 
 const (
-	CheckOk                       = "OK"
-	CheckErr                      = "FAILED"
-	eventMeasurementAge           = "measurement_age"
-	eventMeasurementValMin        = "measurement_min"
-	eventMeasurementValMax        = "measurement_max"
-	eventMeasurementValSuspicious = "measurement_suspicious"
-	eventTargetAll                = "all" // if event.Target is this value, all sensors will be checked
+	CheckOk                   = "OK"
+	CheckErr                  = "FAILED"
+	eventMeasurementAge       = "measurement_age"
+	eventMeasurementValMin    = "measurement_min"
+	eventMeasurementValMax    = "measurement_max"
+	eventMeasurementValFaulty = "measurement_faulty"
+	eventTargetAll            = "all" // if event.Target is this value, all sensors will be checked
 )
 
 type checkType = struct{ description string }
 
 var checkTypes = map[string]checkType{
-	eventMeasurementAge:           checkType{"No measurement from %s since %s"},
-	eventMeasurementValMin:        checkType{"Sensor %s reads low value of %s"},
-	eventMeasurementValMax:        checkType{"Sensor %s reads high value of %s"},
-	eventMeasurementValSuspicious: checkType{"Sensor %s reads presumably faulty value of %s"},
+	eventMeasurementAge:       checkType{"No measurement from %s since %s"},
+	eventMeasurementValMin:    checkType{"Sensor %s reads low value of %s"},
+	eventMeasurementValMax:    checkType{"Sensor %s reads high value of %s"},
+	eventMeasurementValFaulty: checkType{"Sensor %s reads presumably faulty value of %s"},
 }
 
-type SuspiciousValue struct {
+type FaultyValue struct {
 	sensor string
 	val    float64
 }
 
-var suspiciousVals = map[SuspiciousValue]bool{
-	SuspiciousValue{sensor: "BMP280", val: 0.0}:  true,
-	SuspiciousValue{sensor: "HDC1008", val: 0.0}: true,
-	SuspiciousValue{sensor: "HDC1008", val: -40}: true,
-	SuspiciousValue{sensor: "SDS 011", val: 0.0}: true,
+var faultyVals = map[FaultyValue]bool{
+	FaultyValue{sensor: "BMP280", val: 0.0}:  true,
+	FaultyValue{sensor: "HDC1008", val: 0.0}: true,
+	FaultyValue{sensor: "HDC1008", val: -40}: true,
+	FaultyValue{sensor: "SDS 011", val: 0.0}: true,
 }
 
 type NotifyEvent struct {
@@ -71,20 +71,23 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 	var results = []CheckResult{}
 
 	for _, event := range box.NotifyConf.Events {
-		target := event.Target
-
 		for _, s := range box.Sensors {
 			// if a sensor never measured anything, thats ok. checks would fail anyway
 			if s.LastMeasurement == nil {
 				continue
 			}
 
-			if target == eventTargetAll || target == s.Id {
+			// a validator must set these values
+			var (
+				status = CheckOk
+				target = s.Id
+				value  string
+			)
+
+			if event.Target == eventTargetAll || event.Target == s.Id {
 
 				switch event.Type {
 				case eventMeasurementAge:
-					// check if age of lastMeasurement is within threshold
-					status := CheckOk
 					thresh, err := time.ParseDuration(event.Threshold)
 					if err != nil {
 						return nil, err
@@ -93,16 +96,9 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 						status = CheckErr
 					}
 
-					results = append(results, CheckResult{
-						Threshold: event.Threshold,
-						Event:     event.Type,
-						Target:    s.Id,
-						Value:     s.LastMeasurement.Date.String(),
-						Status:    status,
-					})
+					value = s.LastMeasurement.Date.String()
 
 				case eventMeasurementValMin, eventMeasurementValMax:
-					status := CheckOk
 					thresh, err := strconv.ParseFloat(event.Threshold, 64)
 					if err != nil {
 						return nil, err
@@ -116,40 +112,34 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 						status = CheckErr
 					}
 
-					results = append(results, CheckResult{
-						Threshold: event.Threshold,
-						Event:     event.Type,
-						Target:    s.Id,
-						Value:     s.LastMeasurement.Value,
-						Status:    status,
-					})
+					value = s.LastMeasurement.Value
 
-				case eventMeasurementValSuspicious:
-					status := CheckOk
-
+				case eventMeasurementValFaulty:
 					val, err := strconv.ParseFloat(s.LastMeasurement.Value, 64)
 					if err != nil {
 						return nil, err
 					}
-					if suspiciousVals[SuspiciousValue{
+					if faultyVals[FaultyValue{
 						sensor: s.Type,
 						val:    val,
 					}] {
 						status = CheckErr
 					}
 
-					results = append(results, CheckResult{
-						Threshold: event.Threshold,
-						Event:     event.Type,
-						Target:    s.Id,
-						Value:     s.LastMeasurement.Value,
-						Status:    status,
-					})
+					value = s.LastMeasurement.Value
 				}
+
+				results = append(results, CheckResult{
+					Threshold: event.Threshold,
+					Event:     event.Type,
+					Target:    target,
+					Value:     value,
+					Status:    status,
+				})
 			}
 		}
 	}
-	// must return ALL events to enable Notifier to clear previous notifications
+
 	return results, nil
 }
 
