@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./cmd"
+	"github.com/noerw/osem_notify/cmd"
 )
 
 func main() {
