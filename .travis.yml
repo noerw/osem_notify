@@ -3,7 +3,7 @@ language: go
 go:
   - "1.x"
 
-script: ".scripts/build_crossplatform $TRAVIS_TAG"
+script: ".scripts/build_crossplatform.sh $TRAVIS_TAG"
 
 deploy:
   provider: releases

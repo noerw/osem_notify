@@ -81,7 +81,8 @@ Want to use `osem_notify` on a platform where no builds are provided?
 
 Assuming you have golang installed, run
 ```sh
-go install github.com/noerw/osem_notify
+go get -v -d ./
+go build main.go
 ```
 
 For cross-compilation, check [this guide](https://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5) out.
