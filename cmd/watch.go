@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
-	"../core"
 )
 
 var watchInterval int
@@ -22,9 +20,6 @@ var watchCmd = &cobra.Command{
 	Aliases: []string{"serve"},
 	Short:   "Watch boxes for events at an interval",
 	Long:    "Watch boxes for events at an interval",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		ticker = time.NewTicker(time.Duration(watchInterval) * time.Second).C
-	},
 }
 
 var watchBoxesCmd = &cobra.Command{
@@ -32,47 +27,21 @@ var watchBoxesCmd = &cobra.Command{
 	Short: "watch a list of box IDs for events",
 	Long:  "specify box IDs to watch them for events",
 	Args:  BoxIdValidator,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		ticker = time.NewTicker(time.Duration(watchInterval) * time.Second).C
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		exec := func() error {
-			results, err := CheckBoxes(args, defaultConf)
-			if err != nil {
-				return err
-			}
-
-			results, err = filterFromCache(results)
-			if err != nil {
-				return err
-			}
-
-			if shouldNotify {
-				// TODO
-			}
-			return nil
-		}
-
-		err := exec()
+		err := checkAndNotify(args, defaultConf)
 		if err != nil {
 			return err
 		}
 		for {
 			<-ticker
-			err = exec()
+			err = checkAndNotify(args, defaultConf)
 			if err != nil {
 				return err
 			}
 		}
 	},
-}
-
-func filterFromCache(results []core.CheckResult) ([]core.CheckResult, error) {
-	// get results from cache. they are indexed by ______
-
-	// filter, so that only changed result.Status remain
-
-	// extract additional results with Status ERR from cache with time.Since(lastNotifyDate) > thresh
-
-	// upate cache set lastNotifyDate to Now()
-
-	return results, nil
 }

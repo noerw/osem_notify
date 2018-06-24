@@ -22,10 +22,10 @@ func NewOsemClient(client *http.Client) *OsemClient {
 	}
 }
 
-func (client *OsemClient) GetBox(boxId string) (Box, error) {
-	box := Box{}
-	fail := OsemError{}
-	client.sling.New().Path("boxes/").Path(boxId).Receive(&box, &fail)
+func (client *OsemClient) GetBox(boxId string) (*Box, error) {
+	box := &Box{}
+	fail := &OsemError{}
+	client.sling.New().Path("boxes/").Path(boxId).Receive(box, fail)
 	if fail.Message != "" {
 		return box, errors.New("could not fetch box: " + fail.Message)
 	}

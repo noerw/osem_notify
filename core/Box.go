@@ -8,13 +8,22 @@ import (
 
 const (
 	CheckOk                       = "OK"
-	CheckErr                      = "ERROR"
-	eventMeasurementAge           = "measurement_age"        // errors if age of last measurement is higher than a duration
-	eventMeasurementValMin        = "measurement_min"        // errors if value of last measurement is lower than threshold
-	eventMeasurementValMax        = "measurement_max"        // errors if value of last measurement is higher than threshold
-	eventMeasurementValSuspicious = "measurement_suspicious" // checks value of last measurement against a blacklist of values
-	eventTargetAll                = "all"                    // if event.Target is this value, all sensors will be checked
+	CheckErr                      = "FAILED"
+	eventMeasurementAge           = "measurement_age"
+	eventMeasurementValMin        = "measurement_min"
+	eventMeasurementValMax        = "measurement_max"
+	eventMeasurementValSuspicious = "measurement_suspicious"
+	eventTargetAll                = "all" // if event.Target is this value, all sensors will be checked
 )
+
+type checkType = struct{ description string }
+
+var checkTypes = map[string]checkType{
+	eventMeasurementAge:           checkType{"No measurement from %s since %s"},
+	eventMeasurementValMin:        checkType{"Sensor %s reads low value of %s"},
+	eventMeasurementValMax:        checkType{"Sensor %s reads high value of %s"},
+	eventMeasurementValSuspicious: checkType{"Sensor %s reads presumably faulty value of %s"},
+}
 
 type SuspiciousValue struct {
 	sensor string
@@ -28,29 +37,25 @@ var suspiciousVals = map[SuspiciousValue]bool{
 	SuspiciousValue{sensor: "SDS 011", val: 0.0}: true,
 }
 
-type CheckResult struct {
-	Status string
-	Event  string
-	Target string
-	Value  string
-}
-
-func (r CheckResult) String() string {
-	return fmt.Sprintf("check %s on sensor %s: %s with value %s\n", r.Event, r.Target, r.Status, r.Value)
-}
-
 type NotifyEvent struct {
 	Type      string `json:"type"`
 	Target    string `json:"target"`
 	Threshold string `json:"threshold"`
 }
 
+type TransportConfig struct {
+	Transport string      `json:"transport"`
+	Options   interface{} `json:"options"`
+}
+
 type NotifyConfig struct {
-	Events []NotifyEvent `json:"events"`
+	Notifications TransportConfig `json:"notifications"`
+	Events        []NotifyEvent   `json:"events"`
 }
 
 type Box struct {
 	Id      string `json:"_id"`
+	Name    string `json:"name"`
 	Sensors []struct {
 		Id              string `json:"_id"`
 		Type            string `json:"sensorType"`
@@ -59,7 +64,7 @@ type Box struct {
 			Date  time.Time `json:"createdAt"`
 		} `json:"lastMeasurement"`
 	} `json:"sensors"`
-	NotifyConf *NotifyConfig `json:"notify"`
+	NotifyConf *NotifyConfig `json:"healthcheck"`
 }
 
 func (box Box) RunChecks() ([]CheckResult, error) {
@@ -89,10 +94,11 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 					}
 
 					results = append(results, CheckResult{
-						Event:  event.Type,
-						Target: s.Id,
-						Value:  s.LastMeasurement.Date.String(),
-						Status: status,
+						Threshold: event.Threshold,
+						Event:     event.Type,
+						Target:    s.Id,
+						Value:     s.LastMeasurement.Date.String(),
+						Status:    status,
 					})
 
 				case eventMeasurementValMin, eventMeasurementValMax:
@@ -111,10 +117,11 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 					}
 
 					results = append(results, CheckResult{
-						Event:  event.Type,
-						Target: s.Id,
-						Value:  s.LastMeasurement.Value,
-						Status: status,
+						Threshold: event.Threshold,
+						Event:     event.Type,
+						Target:    s.Id,
+						Value:     s.LastMeasurement.Value,
+						Status:    status,
 					})
 
 				case eventMeasurementValSuspicious:
@@ -132,10 +139,11 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 					}
 
 					results = append(results, CheckResult{
-						Event:  event.Type,
-						Target: s.Id,
-						Value:  s.LastMeasurement.Value,
-						Status: status,
+						Threshold: event.Threshold,
+						Event:     event.Type,
+						Target:    s.Id,
+						Value:     s.LastMeasurement.Value,
+						Status:    status,
 					})
 				}
 			}
@@ -143,4 +151,18 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 	}
 	// must return ALL events to enable Notifier to clear previous notifications
 	return results, nil
+}
+
+func (box Box) GetNotifier() (AbstractNotifier, error) {
+	transport := box.NotifyConf.Notifications.Transport
+	if transport == "" {
+		return nil, fmt.Errorf("No notification transport provided")
+	}
+
+	notifier := notifiers[transport]
+	if notifier == nil {
+		return nil, fmt.Errorf("%s is not a supported notification transport", transport)
+	}
+
+	return notifier.New(box.NotifyConf.Notifications.Options)
 }
