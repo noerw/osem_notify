@@ -31,14 +31,33 @@ type EmailNotifier struct {
 }
 
 func (n EmailNotifier) New(config interface{}) (AbstractNotifier, error) {
-	res, ok := config.(EmailNotifier)
+	// assign configuration to the notifier after ensuring the correct type.
+	// lesson of this project: golang requires us to fuck around with type
+	// assertions, instead of providing us with proper inheritance.
 
-	if !ok || res.Recipients == nil {
-		return nil, errors.New("Invalid EmailNotifier options")
+	asserted, ok := config.(EmailNotifier)
+	if !ok || asserted.Recipients == nil {
+		// config did not contain valid options.
+		// first try fallback: parse result of viper is a map[string]interface{},
+		// which requires a different assertion change
+		asserted2, ok := config.(map[string]interface{})
+		if ok {
+			asserted3, ok := asserted2["recipients"].([]interface{})
+			if ok {
+				asserted = EmailNotifier{Recipients: []string{}}
+				for _, rec := range asserted3 {
+					asserted.Recipients = append(asserted.Recipients, rec.(string))
+				}
+			}
+		}
+
+		if asserted.Recipients == nil {
+			return nil, errors.New("Invalid EmailNotifier options")
+		}
 	}
 
 	return EmailNotifier{
-		Recipients: res.Recipients,
+		Recipients: asserted.Recipients,
 	}, nil
 }
 

@@ -19,10 +19,10 @@ const (
 type checkType = struct{ description string }
 
 var checkTypes = map[string]checkType{
-	eventMeasurementAge:       checkType{"No measurement from %s since %s"},
-	eventMeasurementValMin:    checkType{"Sensor %s reads low value of %s"},
-	eventMeasurementValMax:    checkType{"Sensor %s reads high value of %s"},
-	eventMeasurementValFaulty: checkType{"Sensor %s reads presumably faulty value of %s"},
+	eventMeasurementAge:       checkType{"No measurement from %s (%s) since %s"},
+	eventMeasurementValMin:    checkType{"Sensor %s (%s) reads low value of %s"},
+	eventMeasurementValMax:    checkType{"Sensor %s (%s) reads high value of %s"},
+	eventMeasurementValFaulty: checkType{"Sensor %s (%s) reads presumably faulty value of %s"},
 }
 
 type FaultyValue struct {
@@ -58,6 +58,7 @@ type Box struct {
 	Name    string `json:"name"`
 	Sensors []struct {
 		Id              string `json:"_id"`
+		Phenomenon      string `json:"title"`
 		Type            string `json:"sensorType"`
 		LastMeasurement *struct {
 			Value string    `json:"value"`
@@ -79,9 +80,10 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 
 			// a validator must set these values
 			var (
-				status = CheckOk
-				target = s.Id
-				value  string
+				status     = CheckOk
+				target     = s.Id
+				targetName = s.Phenomenon
+				value      string
 			)
 
 			if event.Target == eventTargetAll || event.Target == s.Id {
@@ -130,11 +132,12 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 				}
 
 				results = append(results, CheckResult{
-					Threshold: event.Threshold,
-					Event:     event.Type,
-					Target:    target,
-					Value:     value,
-					Status:    status,
+					Threshold:  event.Threshold,
+					Event:      event.Type,
+					Target:     target,
+					TargetName: targetName,
+					Value:      value,
+					Status:     status,
 				})
 			}
 		}

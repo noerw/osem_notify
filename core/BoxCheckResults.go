@@ -10,11 +10,12 @@ import (
 )
 
 type CheckResult struct {
-	Status    string
-	Event     string
-	Target    string
-	Value     string
-	Threshold string
+	Status     string
+	Event      string
+	Target     string
+	TargetName string
+	Value      string
+	Threshold  string
 }
 
 func (r CheckResult) EventID() string {
@@ -26,9 +27,9 @@ func (r CheckResult) EventID() string {
 
 func (r CheckResult) String() string {
 	if r.Status == CheckOk {
-		return fmt.Sprintf("%s %s (on sensor %s with value %s)\n", r.Event, r.Status, r.Target, r.Value)
+		return fmt.Sprintf("%s %s (on sensor %s (%s) with value %s)\n", r.Event, r.Status, r.TargetName, r.Target, r.Value)
 	} else {
-		return fmt.Sprintf("%s: "+checkTypes[r.Event].description+"\n", r.Status, r.Target, r.Value)
+		return fmt.Sprintf("%s: "+checkTypes[r.Event].description+"\n", r.Status, r.TargetName, r.Target, r.Value)
 	}
 }
 
@@ -69,6 +70,7 @@ func (results BoxCheckResults) Log() {
 }
 
 func (results BoxCheckResults) SendNotifications() error {
+	// FIXME: don't return on errors, process all boxes first!
 	results = results.FilterChangedFromCache(false)
 
 	n := results.Size()
