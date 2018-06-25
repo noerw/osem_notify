@@ -1,12 +1,9 @@
 package core
 
 import (
-	"errors"
 	"fmt"
-	"net/smtp"
-	"strings"
-	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -25,75 +22,92 @@ type Notification struct {
 	subject string
 }
 
-// box config required for the EmailNotifier
-type EmailNotifier struct {
-	Recipients []string
+//////
+
+func (box Box) GetNotifier() (AbstractNotifier, error) {
+	transport := box.NotifyConf.Notifications.Transport
+	if transport == "" {
+		return nil, fmt.Errorf("No notification transport provided")
+	}
+
+	notifier := notifiers[transport]
+	if notifier == nil {
+		return nil, fmt.Errorf("%s is not a supported notification transport", transport)
+	}
+
+	return notifier.New(box.NotifyConf.Notifications.Options)
 }
 
-func (n EmailNotifier) New(config interface{}) (AbstractNotifier, error) {
-	// assign configuration to the notifier after ensuring the correct type.
-	// lesson of this project: golang requires us to fuck around with type
-	// assertions, instead of providing us with proper inheritance.
+func (results BoxCheckResults) SendNotifications() error {
+	// FIXME: don't return on errors, process all boxes first!
+	// FIXME: only update cache when notifications sent successfully
+	results = results.FilterChangedFromCache(false)
 
-	asserted, ok := config.(EmailNotifier)
-	if !ok || asserted.Recipients == nil {
-		// config did not contain valid options.
-		// first try fallback: parse result of viper is a map[string]interface{},
-		// which requires a different assertion change
-		asserted2, ok := config.(map[string]interface{})
-		if ok {
-			asserted3, ok := asserted2["recipients"].([]interface{})
-			if ok {
-				asserted = EmailNotifier{Recipients: []string{}}
-				for _, rec := range asserted3 {
-					asserted.Recipients = append(asserted.Recipients, rec.(string))
+	n := results.Size()
+	if n == 0 {
+		log.Info("No notifications due.")
+		return nil
+	} else {
+		log.Infof("Notifying for %v checks turned bad in total...", results.Size())
+	}
+
+	for box, resultsDue := range results {
+		if len(resultsDue) == 0 {
+			continue
+		}
+
+		transport := box.NotifyConf.Notifications.Transport
+		notifyLog := log.WithFields(log.Fields{
+			"boxId":     box.Id,
+			"transport": transport,
+		})
+
+		notifier, err2 := box.GetNotifier()
+		if err2 != nil {
+			notifyLog.Error(err2)
+			return err2
+		}
+		notification := notifier.ComposeNotification(box, resultsDue)
+		err3 := notifier.Submit(notification)
+		if err3 != nil {
+			notifyLog.Error(err3)
+			return err3
+		}
+		notifyLog.Infof("Sent notification for %s via %s with %v new issues", box.Name, transport, len(resultsDue))
+	}
+
+	return nil
+}
+
+func (results BoxCheckResults) FilterChangedFromCache(keepOk bool) BoxCheckResults {
+	remaining := BoxCheckResults{}
+
+	for box, boxResults := range results {
+		// get results from cache. they are indexed by an event ID per boxId
+		// filter, so that only changed result.Status remain
+		remaining[box] = []CheckResult{}
+		for _, result := range boxResults {
+			cached := viper.GetStringMap(fmt.Sprintf("watchcache.%s.%s", box.Id, result.EventID()))
+			if result.Status != cached["laststatus"] {
+				if result.Status != CheckOk || keepOk {
+					remaining[box] = append(remaining[box], result)
 				}
 			}
 		}
 
-		if asserted.Recipients == nil {
-			return nil, errors.New("Invalid EmailNotifier options")
+		// TODO: reminder functionality: extract additional results with Status ERR
+		// from cache with time.Since(lastNotifyDate) > remindAfter.
+		// would require to serialize the full result..
+	}
+
+	// upate cache, setting lastNotifyDate to Now()
+	for box, boxResults := range results {
+		for _, result := range boxResults {
+			// FIXME: somehow this is not persisted?
+			key := fmt.Sprintf("watchcache.%s.%s", box.Id, result.EventID())
+			viper.Set(key+".laststatus", result.Status)
 		}
 	}
 
-	return EmailNotifier{
-		Recipients: asserted.Recipients,
-	}, nil
-}
-
-func (n EmailNotifier) ComposeNotification(box *Box, checks []CheckResult) Notification {
-	resultTexts := []string{}
-	for _, check := range checks {
-		resultTexts = append(resultTexts, check.String())
-	}
-
-	return Notification{
-		subject: fmt.Sprintf("Issues with your box \"%s\" on opensensemap.org!", box.Name),
-		body: fmt.Sprintf("A check at %s identified the following issue(s) with your box %s:\n\n%s\n\nYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
-			time.Now().Round(time.Minute), box.Name, strings.Join(resultTexts, "\n"), box.Id),
-	}
-}
-
-func (n EmailNotifier) Submit(notification Notification) error {
-	auth := smtp.PlainAuth(
-		"",
-		viper.GetString("email.user"),
-		viper.GetString("email.pass"),
-		viper.GetString("email.host"),
-	)
-
-	from := viper.GetString("email.from")
-	body := fmt.Sprintf("From: openSenseMap Notifier <%s>\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s", from, notification.subject, notification.body)
-
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
-	err := smtp.SendMail(
-		fmt.Sprintf("%s:%s", viper.GetString("email.host"), viper.GetString("email.port")),
-		auth,
-		from,
-		n.Recipients,
-		[]byte(body),
-	)
-
-	return err
+	return remaining
 }

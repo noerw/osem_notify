@@ -1,6 +1,8 @@
 package core
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
@@ -37,35 +39,28 @@ var faultyVals = map[FaultyValue]bool{
 	FaultyValue{sensor: "SDS 011", val: 0.0}: true,
 }
 
-type NotifyEvent struct {
-	Type      string `json:"type"`
-	Target    string `json:"target"`
-	Threshold string `json:"threshold"`
+type CheckResult struct {
+	Status     string
+	Event      string
+	Target     string
+	TargetName string
+	Value      string
+	Threshold  string
 }
 
-type TransportConfig struct {
-	Transport string      `json:"transport"`
-	Options   interface{} `json:"options"`
+func (r CheckResult) EventID() string {
+	s := fmt.Sprintf("%s%s%s", r.Event, r.Target, r.Threshold)
+	hasher := sha256.New()
+	hasher.Write([]byte(s))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-type NotifyConfig struct {
-	Notifications TransportConfig `json:"notifications"`
-	Events        []NotifyEvent   `json:"events"`
-}
-
-type Box struct {
-	Id      string `json:"_id"`
-	Name    string `json:"name"`
-	Sensors []struct {
-		Id              string `json:"_id"`
-		Phenomenon      string `json:"title"`
-		Type            string `json:"sensorType"`
-		LastMeasurement *struct {
-			Value string    `json:"value"`
-			Date  time.Time `json:"createdAt"`
-		} `json:"lastMeasurement"`
-	} `json:"sensors"`
-	NotifyConf *NotifyConfig `json:"healthcheck"`
+func (r CheckResult) String() string {
+	if r.Status == CheckOk {
+		return fmt.Sprintf("%s %s (on sensor %s (%s) with value %s)\n", r.Event, r.Status, r.TargetName, r.Target, r.Value)
+	} else {
+		return fmt.Sprintf("%s: "+checkTypes[r.Event].description+"\n", r.Status, r.TargetName, r.Target, r.Value)
+	}
 }
 
 func (box Box) RunChecks() ([]CheckResult, error) {
@@ -144,18 +139,4 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 	}
 
 	return results, nil
-}
-
-func (box Box) GetNotifier() (AbstractNotifier, error) {
-	transport := box.NotifyConf.Notifications.Transport
-	if transport == "" {
-		return nil, fmt.Errorf("No notification transport provided")
-	}
-
-	notifier := notifiers[transport]
-	if notifier == nil {
-		return nil, fmt.Errorf("%s is not a supported notification transport", transport)
-	}
-
-	return notifier.New(box.NotifyConf.Notifications.Options)
 }
