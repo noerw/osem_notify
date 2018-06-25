@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var notifiers = map[string]AbstractNotifier{
+var Notifiers = map[string]AbstractNotifier{
 	"email": EmailNotifier{},
 }
 
@@ -18,8 +18,8 @@ type AbstractNotifier interface {
 }
 
 type Notification struct {
-	body    string
-	subject string
+	Body    string
+	Subject string
 }
 
 //////
@@ -30,7 +30,7 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 		return nil, fmt.Errorf("No notification transport provided")
 	}
 
-	notifier := notifiers[transport]
+	notifier := Notifiers[transport]
 	if notifier == nil {
 		return nil, fmt.Errorf("%s is not a supported notification transport", transport)
 	}

@@ -53,8 +53,8 @@ func (n EmailNotifier) ComposeNotification(box *Box, checks []CheckResult) Notif
 	}
 
 	return Notification{
-		subject: fmt.Sprintf("Issues with your box \"%s\" on opensensemap.org!", box.Name),
-		body: fmt.Sprintf("A check at %s identified the following issue(s) with your box %s:\n\n%s\n\nYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
+		Subject: fmt.Sprintf("Issues with your box \"%s\" on opensensemap.org!", box.Name),
+		Body: fmt.Sprintf("A check at %s identified the following issue(s) with your box %s:\n\n%s\n\nYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
 			time.Now().Round(time.Minute), box.Name, strings.Join(resultTexts, "\n"), box.Id),
 	}
 }
@@ -68,7 +68,7 @@ func (n EmailNotifier) Submit(notification Notification) error {
 	)
 
 	from := viper.GetString("email.from")
-	body := fmt.Sprintf("From: openSenseMap Notifier <%s>\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s", from, notification.subject, notification.body)
+	body := fmt.Sprintf("From: openSenseMap Notifier <%s>\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s", from, notification.Subject, notification.Body)
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
