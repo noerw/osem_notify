@@ -2,29 +2,36 @@
 
 Cross platform command line application to run health checks against sensor stations registered on [openSenseMap.org](https://opensensemap.org).
 
-This tool quickly runs various health checks on selected senseBoxes,
-and can send out notifications via various protocols.
-Specifically email is implemented, but other transports can be added easily.
+This tool lets you automatically check if senseBoxes are still runnning correctly,
+and when that's not the case, notifies you.
+Currently, email notifications are implemented, but other transports can be added easily.
+Implemented health checks are [described below](#possible-values-for-defaulthealthchecksevents), and new ones can be added just as easily (given some knowledge of programming).
 
-The tool can also operate in watch mode, checking boxes at regular intervals.
+The tool has multiple modes of operation:
 
-Check the manual in the [doc/](doc/osem_notify.md) directory for a description of features.
+- `osem_notify check boxes`: run one-off checks on boxes
+- `osem_notify watch boxes`: check boxes continuously
+
+Run `osem_notify help` or check the manual in the [docs/](docs/osem_notify.md) directory for more details.
 
 ## get it
-Download a build from the [releases page](releases/).
-You can immediately call the application by running `./osem_notify` in a terminal in your downloads directory.
+Download a build from the [releases page](https://github.com/noerw/osem_notify/releases/).
+You can run the application by running `./osem_notify*` in a terminal in your downloads directory.
 
-On unix platforms you may add it to your path for convenience, so it is always callable via `osem_notify`:
+On unix platforms you may need to make it executable, and can add it to your `$PATH` for convenience, so it is always callable via `osem_notify`:
 ```sh
-sudo mv osem_notify /usr/bin/osem_notify
+chmod +x osem_notify*
+sudo mv osem_notify* /usr/bin/osem_notify
 ```
 
 ## configure it
-Configuration is required to set up notification transports, and can set the default healthchecks.
+The tool works out of the box for basic functionality, but must be configured to set up notifications.
+
 Configuration can be done via a YAML file located at `~/.osem_notify.yml` or through environment variables.
 Example configuration:
 
 ```yaml
+# override default health checks:
 defaultHealthchecks:
   notifications:
     transport: email
@@ -49,14 +56,14 @@ email:
   from: hildegunst@example.com
 ```
 
-### possible values for `notifications`:
+### possible values for `defaultHealthchecks.notifications`:
 `transport` | `options`
 ------------|------------
 `email`     | `recipients`: list of email addresses
 
 Want more? [add it](#contribute)!
 
-### possible values for `events[]`:
+### possible values for `defaultHealthchecks.events[]`:
 
 `type`               | description
 ---------------------|------------
@@ -71,8 +78,9 @@ Want more? [add it](#contribute)!
 ### configuration via environment variables
 Instead of a YAML file, you may configure the tool through environment variables. Keys are the same as in the YAML, but:
 
-- prefixed with `osem_notify_`
+- prefixed with `OSEM_NOTIFY_`
 - path separator is not `.`, but `_`
+- all upper case
 
 Example: `OSEM_NOTIFY_EMAIL_PASS=supersecret osem_notify check boxes`
 
@@ -92,7 +100,7 @@ Contributions are welcome!
 Check out the following locations for plugging in new functionality:
 
 - new notification transports: [core/notifiers.go](core/notifiers.go)
-- new health checks: [core/Box.go](core/Box.go)
+- new health checks: [core/healthcheck*.go](core/healtchecks.go)
 - new commands: [cmd/](cmd/)
 
 Before committing and submitting a pull request, please run `go fmt ./ cmd/ core/`.
