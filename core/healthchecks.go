@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"strconv"
-	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -18,34 +18,27 @@ const (
 	eventTargetAll            = "all" // if event.Target is this value, all sensors will be checked
 )
 
-type checkType = struct{ description string }
-
-var checkTypes = map[string]checkType{
-	eventMeasurementAge:       checkType{"No measurement from %s (%s) since %s"},
-	eventMeasurementValMin:    checkType{"Sensor %s (%s) reads low value of %s"},
-	eventMeasurementValMax:    checkType{"Sensor %s (%s) reads high value of %s"},
-	eventMeasurementValFaulty: checkType{"Sensor %s (%s) reads presumably faulty value of %s"},
+type checkType = struct {
+	name      string                          // name that is used in config
+	toString  func(result CheckResult) string // error message when check failed
+	checkFunc func(event NotifyEvent, sensor Sensor, context Box) (CheckResult, error)
 }
 
-type FaultyValue struct {
-	sensor string
-	val    float64
-}
-
-var faultyVals = map[FaultyValue]bool{
-	FaultyValue{sensor: "BMP280", val: 0.0}:  true,
-	FaultyValue{sensor: "HDC1008", val: 0.0}: true,
-	FaultyValue{sensor: "HDC1008", val: -40}: true,
-	FaultyValue{sensor: "SDS 011", val: 0.0}: true,
+var checkers = map[string]checkType{
+	checkMeasurementAge.name:    checkMeasurementAge,
+	checkMeasurementMin.name:    checkMeasurementMin,
+	checkMeasurementMax.name:    checkMeasurementMax,
+	checkMeasurementFaulty.name: checkMeasurementFaulty,
 }
 
 type CheckResult struct {
-	Status     string
-	Event      string
-	Target     string
+	Status     string // should be CheckOk | CheckErr
 	TargetName string
 	Value      string
-	Threshold  string
+	Target     string
+
+	Event     string // these should be copied from the NotifyEvent
+	Threshold string
 }
 
 func (r CheckResult) EventID() string {
@@ -59,12 +52,13 @@ func (r CheckResult) String() string {
 	if r.Status == CheckOk {
 		return fmt.Sprintf("%s %s (on sensor %s (%s) with value %s)\n", r.Event, r.Status, r.TargetName, r.Target, r.Value)
 	} else {
-		return fmt.Sprintf("%s: "+checkTypes[r.Event].description+"\n", r.Status, r.TargetName, r.Target, r.Value)
+		return fmt.Sprintf("%s: %s"+"\n", r.Status, checkers[r.Event].toString(r))
 	}
 }
 
 func (box Box) RunChecks() ([]CheckResult, error) {
 	var results = []CheckResult{}
+	boxLogger := log.WithField("box", box.Id)
 
 	for _, event := range box.NotifyConf.Events {
 		for _, s := range box.Sensors {
@@ -73,68 +67,18 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 				continue
 			}
 
-			// a validator must set these values
-			var (
-				status     = CheckOk
-				target     = s.Id
-				targetName = s.Phenomenon
-				value      string
-			)
-
-			if event.Target == eventTargetAll || event.Target == s.Id {
-
-				switch event.Type {
-				case eventMeasurementAge:
-					thresh, err := time.ParseDuration(event.Threshold)
-					if err != nil {
-						return nil, err
-					}
-					if time.Since(s.LastMeasurement.Date) > thresh {
-						status = CheckErr
-					}
-
-					value = s.LastMeasurement.Date.String()
-
-				case eventMeasurementValMin, eventMeasurementValMax:
-					thresh, err := strconv.ParseFloat(event.Threshold, 64)
-					if err != nil {
-						return nil, err
-					}
-					val, err2 := strconv.ParseFloat(s.LastMeasurement.Value, 64)
-					if err2 != nil {
-						return nil, err2
-					}
-					if event.Type == eventMeasurementValMax && val > thresh ||
-						event.Type == eventMeasurementValMin && val < thresh {
-						status = CheckErr
-					}
-
-					value = s.LastMeasurement.Value
-
-				case eventMeasurementValFaulty:
-					val, err := strconv.ParseFloat(s.LastMeasurement.Value, 64)
-					if err != nil {
-						return nil, err
-					}
-					if faultyVals[FaultyValue{
-						sensor: s.Type,
-						val:    val,
-					}] {
-						status = CheckErr
-					}
-
-					value = s.LastMeasurement.Value
-				}
-
-				results = append(results, CheckResult{
-					Threshold:  event.Threshold,
-					Event:      event.Type,
-					Target:     target,
-					TargetName: targetName,
-					Value:      value,
-					Status:     status,
-				})
+			checker := checkers[event.Type]
+			if checker.checkFunc == nil {
+				boxLogger.Warnf("ignoring unknown event type %s", event.Type)
+				continue
 			}
+
+			result, err := checker.checkFunc(event, s, box)
+			if err != nil {
+				boxLogger.Errorf("error checking event %s", event.Type)
+			}
+
+			results = append(results, result)
 		}
 	}
 

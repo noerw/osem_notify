@@ -49,17 +49,19 @@ type NotifyConfig struct {
 	Events        []NotifyEvent   `json:"events"`
 }
 
+type Sensor struct {
+	Id              string `json:"_id"`
+	Phenomenon      string `json:"title"`
+	Type            string `json:"sensorType"`
+	LastMeasurement *struct {
+		Value string    `json:"value"`
+		Date  time.Time `json:"createdAt"`
+	} `json:"lastMeasurement"`
+}
+
 type Box struct {
-	Id      string `json:"_id"`
-	Name    string `json:"name"`
-	Sensors []struct {
-		Id              string `json:"_id"`
-		Phenomenon      string `json:"title"`
-		Type            string `json:"sensorType"`
-		LastMeasurement *struct {
-			Value string    `json:"value"`
-			Date  time.Time `json:"createdAt"`
-		} `json:"lastMeasurement"`
-	} `json:"sensors"`
+	Id         string        `json:"_id"`
+	Name       string        `json:"name"`
+	Sensors    []Sensor      `json:"sensors"`
 	NotifyConf *NotifyConfig `json:"healthcheck"`
 }
