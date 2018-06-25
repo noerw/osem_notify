@@ -16,9 +16,9 @@ type OsemClient struct {
 	sling *sling.Sling
 }
 
-func NewOsemClient(client *http.Client) *OsemClient {
+func NewOsemClient(endpoint string) *OsemClient {
 	return &OsemClient{
-		sling: sling.New().Client(client).Base("https://api.opensensemap.org/"),
+		sling: sling.New().Client(&http.Client{}).Base(endpoint),
 	}
 }
 
@@ -32,4 +32,3 @@ func (client *OsemClient) GetBox(boxId string) (*Box, error) {
 	return box, nil
 }
 
-var Osem = NewOsemClient(&http.Client{}) // default client

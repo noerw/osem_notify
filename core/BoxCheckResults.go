@@ -161,8 +161,10 @@ func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, err
 	boxLogger := log.WithFields(log.Fields{"boxId": boxId})
 	boxLogger.Info("checking box for events")
 
+	osem := NewOsemClient(viper.GetString("api"))
+
 	// get box data
-	box, err := Osem.GetBox(boxId)
+	box, err := osem.GetBox(boxId)
 	if err != nil {
 		boxLogger.Error(err)
 		return nil, nil, err

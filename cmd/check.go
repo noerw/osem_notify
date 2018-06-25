@@ -16,10 +16,11 @@ var checkCmd = &cobra.Command{
 }
 
 var checkBoxCmd = &cobra.Command{
-	Use:   "boxes <boxId> [...<boxIds>]",
-	Short: "one-off check on one or more box IDs",
-	Long:  "specify box IDs to check them for events",
-	Args:  BoxIdValidator,
+	Use:     "boxes <boxId> [...<boxIds>]",
+	Aliases: []string{"box"},
+	Short:   "one-off check on one or more box IDs",
+	Long:    "specify box IDs to check them for events",
+	Args:    BoxIdValidator,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		return checkAndNotify(args)

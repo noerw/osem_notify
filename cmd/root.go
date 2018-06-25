@@ -41,14 +41,19 @@ func init() {
 		shouldNotify bool
 		debug        bool
 		logFormat    string
+		api          string
 	)
 
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to config file (default $HOME/.osem_notify.yml)")
+	rootCmd.PersistentFlags().StringVarP(&api, "api", "a", "https://api.opensensemap.org", "openSenseMap API to query against")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, "if set, will send out notifications.\nOtherwise results are printed to stdout only")
+	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, `if set, will send out notifications.
+Otherwise results are printed to stdout only.
+You might want to run 'osem_notify debug notifications' first to verify everything works.
+`)
 
 	viper.BindPFlags(rootCmd.PersistentFlags()) // let flags override config
 }

@@ -4,14 +4,20 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var watchInterval int
 var ticker <-chan time.Time
 
 func init() {
-	watchCmd.AddCommand(watchBoxesCmd)
+	var (
+		watchInterval int
+	)
+
 	watchCmd.PersistentFlags().IntVarP(&watchInterval, "interval", "i", 15, "interval to run checks in minutes")
+	viper.BindPFlags(watchCmd.PersistentFlags())
+
+	watchCmd.AddCommand(watchBoxesCmd)
 	rootCmd.AddCommand(watchCmd)
 }
 
@@ -23,12 +29,14 @@ var watchCmd = &cobra.Command{
 }
 
 var watchBoxesCmd = &cobra.Command{
-	Use:   "boxes <boxId> [...<boxIds>]",
-	Short: "watch a list of box IDs for events",
-	Long:  "specify box IDs to watch them for events",
-	Args:  BoxIdValidator,
+	Use:     "boxes <boxId> [...<boxIds>]",
+	Aliases: []string{"box"},
+	Short:   "watch a list of box IDs for events",
+	Long:    "specify box IDs to watch them for events",
+	Args:    BoxIdValidator,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		ticker = time.NewTicker(time.Duration(watchInterval) * time.Minute).C
+		interval := viper.GetDuration("interval") * time.Minute
+		ticker = time.NewTicker(interval).C
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
