@@ -6,7 +6,74 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/noerw/osem_notify/utils"
 )
+
+var configHelpCmd = &cobra.Command{
+	Use:   "config",
+	Short: "How to configure osem_notify",
+	Long: `osem_notify works out of the box for basic functionality, but uses configuration to
+  set up notification transports and healthchecks. Additionally, all command line flags can
+  be set to default values through the configuration.
+
+  Configuration can be set either through a YAML file, or through environment variables.
+  You can use different configuration files per call by settings the --config flag.
+
+
+> Example configuration:
+
+  # override default health checks:
+  defaultHealthchecks:
+    notifications:
+      transport: email
+      options:
+        recipients:
+        - fridolina@example.com
+        - ruth.less@example.com
+    events:
+      - type: "measurement_age"
+        target: "all"    # all sensors
+        threshold: "15m" # any duration
+      - type: "measurement_faulty"
+        target: "all"
+        threshold: ""
+
+  # only needed when sending notifications via email
+  email:
+    host: smtp.example.com
+    port: 25
+    user: foo
+    pass: bar
+    from: hildegunst@example.com
+
+
+> possible values for defaultHealthchecks.notifications:
+
+  transport | options
+  ----------|-------------------------------------
+  email     | recipients: list of email addresses
+
+
+> possible values for defaultHealthchecks.events[]:
+
+  type               | description
+  -------------------|---------------------------------------------------
+  measurement_age    | Alert when sensor target has not submitted measurements within threshold duration.
+  measurement_faulty | Alert when sensor target's last reading was a presumably faulty value (e.g. broken / disconnected sensor).
+  measurement_min    | Alert when sensor target's last measurement is lower than threshold.
+  measurement_max    | Alert when sensor target's last measurement is higher than threshold.
+
+  - target can be either a sensor ID, or "all" to match all sensors of the box.
+  - threshold must be a string.
+
+> configuration via environment variables
+
+  Instead of a YAML file, you may configure the tool through environment variables. Keys are the same as in the YAML, but:
+  keys are prefixed with "OSEM_NOTIFY_", path separator is not ".", but "_", all upper case
+
+  Example: OSEM_NOTIFY_EMAIL_PASS=supersecret osem_notify check boxes`,
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "osem_notify",
@@ -50,12 +117,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&api, "api", "a", "https://api.opensensemap.org", "openSenseMap API to query against")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, `if set, will send out notifications.
+	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, `if set, will send out notifications,
 Otherwise results are printed to stdout only.
 You might want to run 'osem_notify debug notifications' first to verify everything works.
+
+Notifications for failing checks are sent only once,
+and then cached until the issue got resolved.
+To clear the cache, delete the file ~/.osem_notify_cache.yaml.
 `)
 
 	viper.BindPFlags(rootCmd.PersistentFlags()) // let flags override config
+
+	rootCmd.AddCommand(configHelpCmd)
 }
 
 func Execute() {

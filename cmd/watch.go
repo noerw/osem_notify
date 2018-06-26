@@ -14,7 +14,7 @@ func init() {
 		watchInterval int
 	)
 
-	watchCmd.PersistentFlags().IntVarP(&watchInterval, "interval", "i", 15, "interval to run checks in minutes")
+	watchCmd.PersistentFlags().IntVarP(&watchInterval, "interval", "i", 30, "interval to run checks in minutes")
 	viper.BindPFlags(watchCmd.PersistentFlags())
 
 	watchCmd.AddCommand(watchBoxesCmd)
