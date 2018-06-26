@@ -48,6 +48,7 @@ var watchBoxesCmd = &cobra.Command{
 			<-ticker
 			err = checkAndNotify(args)
 			if err != nil {
+				// we already did retries, so exiting seems appropriate
 				return err
 			}
 		}

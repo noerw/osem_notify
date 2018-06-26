@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -39,9 +41,8 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 }
 
 func (results BoxCheckResults) SendNotifications() error {
-	// FIXME: don't return on errors, process all boxes first!
-	// FIXME: only update cache when notifications sent successfully
 	results = results.FilterChangedFromCache(false)
+	errs := []string{}
 
 	n := results.Size()
 	if n == 0 {
@@ -51,6 +52,7 @@ func (results BoxCheckResults) SendNotifications() error {
 		log.Infof("Notifying for %v checks turned bad in total...", results.Size())
 	}
 
+	// FIXME: only update cache when notifications sent successfully
 	for box, resultsDue := range results {
 		if len(resultsDue) == 0 {
 			continue
@@ -62,20 +64,33 @@ func (results BoxCheckResults) SendNotifications() error {
 			"transport": transport,
 		})
 
-		notifier, err2 := box.GetNotifier()
-		if err2 != nil {
-			notifyLog.Error(err2)
-			return err2
+		notifier, err := box.GetNotifier()
+		if err != nil {
+			notifyLog.Error(err)
+			errs = append(errs, err.Error())
+			continue
 		}
+
 		notification := notifier.ComposeNotification(box, resultsDue)
-		err3 := notifier.Submit(notification)
-		if err3 != nil {
-			notifyLog.Error(err3)
-			return err3
+
+		var submitErr error
+		submitErr = notifier.Submit(notification)
+		for retry := 1; submitErr != nil && retry < 3; retry++ {
+			time.Sleep(10 * time.Second)
+			notifyLog.Debugf("trying to submit (retry %v)", retry)
 		}
+		if submitErr != nil {
+			notifyLog.Error(submitErr)
+			errs = append(errs, submitErr.Error())
+			continue
+		}
+
 		notifyLog.Infof("Sent notification for %s via %s with %v new issues", box.Name, transport, len(resultsDue))
 	}
 
+	if len(errs) != 0 {
+		return fmt.Errorf(strings.Join(errs, "\n"))
+	}
 	return nil
 }
 

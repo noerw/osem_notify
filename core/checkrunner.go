@@ -1,6 +1,9 @@
 package core
 
 import (
+	"fmt"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -45,29 +48,35 @@ func CheckBoxes(boxIds []string, defaultConf *NotifyConfig) (BoxCheckResults, er
 	log.Debug("Checking notifications for ", len(boxIds), " box(es)")
 
 	results := BoxCheckResults{}
+	errs := []string{}
+
+	// TODO: check boxes in parallel, capped at 5 at once
 	for _, boxId := range boxIds {
-		// TODO: check boxes in parallel, capped at 5 at once
+		boxLogger := log.WithField("boxId", boxId)
+		boxLogger.Info("checking box for events")
 
 		box, res, err := checkBox(boxId, defaultConf)
 		if err != nil {
-			return nil, err
+			boxLogger.Errorf("could not run checks on box %s: %s", boxId, err)
+			errs = append(errs, err.Error())
+			continue
 		}
 		results[box] = res
 	}
 
+	if len(errs) != 0 {
+		return results, fmt.Errorf(strings.Join(errs, "\n"))
+	}
 	return results, nil
 }
 
 func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, error) {
-	boxLogger := log.WithFields(log.Fields{"boxId": boxId})
-	boxLogger.Info("checking box for events")
 
 	osem := NewOsemClient(viper.GetString("api"))
 
 	// get box data
 	box, err := osem.GetBox(boxId)
 	if err != nil {
-		boxLogger.Error(err)
 		return nil, nil, err
 	}
 
@@ -79,7 +88,6 @@ func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, err
 	// run checks
 	results, err2 := box.RunChecks()
 	if err2 != nil {
-		boxLogger.Error("could not run checks on box: ", err2)
 		return box, results, err2
 	}
 
