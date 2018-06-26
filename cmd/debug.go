@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/noerw/osem_notify/core"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/noerw/osem_notify/core"
+	"github.com/noerw/osem_notify/utils"
 )
 
 func init() {
@@ -23,7 +25,7 @@ var debugCmd = &cobra.Command{
 		log.SetLevel(log.DebugLevel)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		printConfig()
+		utils.PrintConfig()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

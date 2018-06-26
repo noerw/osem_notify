@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 		log.SetOutput(os.Stdout)
 		if viper.GetBool("debug") {
 			log.SetLevel(log.DebugLevel)
-			printConfig()
+			utils.PrintConfig()
 		} else {
 			log.SetLevel(log.InfoLevel)
 		}
@@ -60,7 +60,7 @@ You might want to run 'osem_notify debug notifications' first to verify everythi
 
 func Execute() {
 	// generate documentation
-	// err := doc.GenMarkdownTree(rootCmd, "./doc")
+	// err := doc.GenMarkdownTree(rootCmd, "./docs")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }

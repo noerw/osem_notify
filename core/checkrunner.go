@@ -10,10 +10,14 @@ import (
 
 type BoxCheckResults map[*Box][]CheckResult
 
-func (results BoxCheckResults) Size() int {
+func (results BoxCheckResults) Size(status string) int {
 	size := 0
 	for _, boxResults := range results {
-		size += len(boxResults)
+		for _, result := range boxResults {
+			if status == result.Status || status == "" {
+				size++
+			}
+		}
 	}
 	return size
 }
@@ -71,7 +75,6 @@ func CheckBoxes(boxIds []string, defaultConf *NotifyConfig) (BoxCheckResults, er
 }
 
 func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, error) {
-
 	osem := NewOsemClient(viper.GetString("api"))
 
 	// get box data

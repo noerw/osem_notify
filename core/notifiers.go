@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 var Notifiers = map[string]AbstractNotifier{
@@ -41,21 +40,26 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 }
 
 func (results BoxCheckResults) SendNotifications() error {
-	results = results.FilterChangedFromCache(false)
-	errs := []string{}
+	// TODO: expose flags to not use cache, and to notify for checks turned CheckOk as well
 
-	n := results.Size()
-	if n == 0 {
+	results = results.filterChangedFromCache()
+
+	nErr := results.Size(CheckErr)
+	if nErr == 0 {
 		log.Info("No notifications due.")
-		return nil
 	} else {
-		log.Infof("Notifying for %v checks turned bad in total...", results.Size())
+		log.Infof("Notifying for %v checks turned bad in total...", nErr)
 	}
+	log.Debugf("%v checks turned OK!", results.Size(CheckOk))
 
-	// FIXME: only update cache when notifications sent successfully
-	for box, resultsDue := range results {
-		if len(resultsDue) == 0 {
-			continue
+	errs := []string{}
+	for box, resultsBox := range results {
+		// only submit results which are errors
+		resultsDue := []CheckResult{}
+		for _, result := range resultsBox {
+			if result.Status != CheckOk {
+				resultsDue = append(resultsDue, result)
+			}
 		}
 
 		transport := box.NotifyConf.Notifications.Transport
@@ -64,65 +68,44 @@ func (results BoxCheckResults) SendNotifications() error {
 			"transport": transport,
 		})
 
-		notifier, err := box.GetNotifier()
-		if err != nil {
-			notifyLog.Error(err)
-			errs = append(errs, err.Error())
-			continue
+		if len(resultsDue) != 0 {
+			notifier, err := box.GetNotifier()
+			if err != nil {
+				notifyLog.Error(err)
+				errs = append(errs, err.Error())
+				continue
+			}
+
+			notification := notifier.ComposeNotification(box, resultsDue)
+
+			var submitErr error
+			submitErr = notifier.Submit(notification)
+			for retry := 1; submitErr != nil && retry < 3; retry++ {
+				time.Sleep(10 * time.Second)
+				notifyLog.Infof("trying to submit (retry %v)", retry)
+			}
+			if submitErr != nil {
+				notifyLog.Error(submitErr)
+				errs = append(errs, submitErr.Error())
+				continue
+			}
 		}
 
-		notification := notifier.ComposeNotification(box, resultsDue)
-
-		var submitErr error
-		submitErr = notifier.Submit(notification)
-		for retry := 1; submitErr != nil && retry < 3; retry++ {
-			time.Sleep(10 * time.Second)
-			notifyLog.Debugf("trying to submit (retry %v)", retry)
-		}
-		if submitErr != nil {
-			notifyLog.Error(submitErr)
-			errs = append(errs, submitErr.Error())
-			continue
+		// update cache (also with CheckOk results to reset status)
+		notifyLog.Debug("updating cache")
+		cacheError := updateCache(box, resultsBox)
+		if cacheError != nil {
+			notifyLog.Error("could not cache notification results: ", cacheError)
+			errs = append(errs, cacheError.Error())
 		}
 
-		notifyLog.Infof("Sent notification for %s via %s with %v new issues", box.Name, transport, len(resultsDue))
+		if len(resultsDue) != 0 {
+			notifyLog.Infof("Sent notification for %s via %s with %v new issues", box.Name, transport, len(resultsDue))
+		}
 	}
 
 	if len(errs) != 0 {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 	return nil
-}
-
-func (results BoxCheckResults) FilterChangedFromCache(keepOk bool) BoxCheckResults {
-	remaining := BoxCheckResults{}
-
-	for box, boxResults := range results {
-		// get results from cache. they are indexed by an event ID per boxId
-		// filter, so that only changed result.Status remain
-		remaining[box] = []CheckResult{}
-		for _, result := range boxResults {
-			cached := viper.GetStringMap(fmt.Sprintf("watchcache.%s.%s", box.Id, result.EventID()))
-			if result.Status != cached["laststatus"] {
-				if result.Status != CheckOk || keepOk {
-					remaining[box] = append(remaining[box], result)
-				}
-			}
-		}
-
-		// TODO: reminder functionality: extract additional results with Status ERR
-		// from cache with time.Since(lastNotifyDate) > remindAfter.
-		// would require to serialize the full result..
-	}
-
-	// upate cache, setting lastNotifyDate to Now()
-	for box, boxResults := range results {
-		for _, result := range boxResults {
-			// FIXME: somehow this is not persisted?
-			key := fmt.Sprintf("watchcache.%s.%s", box.Id, result.EventID())
-			viper.Set(key+".laststatus", result.Status)
-		}
-	}
-
-	return remaining
 }
