@@ -5,8 +5,13 @@ import (
 	"strconv"
 )
 
+const (
+	nameMin = "measurement_min"
+	nameMax = "measurement_max"
+)
+
 var checkMeasurementMin = checkType{
-	name: "measurement_min",
+	name: nameMin,
 	toString: func(r CheckResult) string {
 		return fmt.Sprintf("Sensor %s (%s) reads low value of %s", r.TargetName, r.Target, r.Value)
 	},
@@ -14,7 +19,7 @@ var checkMeasurementMin = checkType{
 }
 
 var checkMeasurementMax = checkType{
-	name: "measurement_min",
+	name: nameMax,
 	toString: func(r CheckResult) string {
 		return fmt.Sprintf("Sensor %s (%s) reads high value of %s", r.TargetName, r.Target, r.Value)
 	},
@@ -41,8 +46,8 @@ func validateMeasurementMinMax(e NotifyEvent, s Sensor, b Box) (CheckResult, err
 		return result, err
 	}
 
-	if e.Type == eventMeasurementValMax && val > thresh ||
-		e.Type == eventMeasurementValMin && val < thresh {
+	if e.Type == nameMax && val > thresh ||
+		e.Type == nameMin && val < thresh {
 		result.Status = CheckErr
 	}
 

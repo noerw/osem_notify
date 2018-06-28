@@ -42,7 +42,9 @@ func (results BoxCheckResults) Log() {
 				countErr++
 			}
 		}
-		if countErr == 0 {
+		if len(boxResults) == 0 {
+			boxLog.Infof("%s: no checks defined", box.Name)
+		} else if countErr == 0 {
 			boxLog.Infof("%s: all is fine!", box.Name)
 		}
 	}

@@ -4,9 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/noerw/osem_notify/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
+	"github.com/noerw/osem_notify/utils"
 )
 
 // initConfig reads in config file and ENV variables if set.

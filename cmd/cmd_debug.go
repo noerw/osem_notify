@@ -55,11 +55,11 @@ var debugNotificationsCmd = &cobra.Command{
 
 			host, _ := os.Hostname()
 			err = n.Submit(core.Notification{
-				Subject: "Test notification from opeSenseMap notifier",
+				Subject: "Test notification from openSenseMap notifier",
 				Body:    fmt.Sprintf("Your notification set up on %s is working fine!", host),
 			})
 			if err != nil {
-				notLog.Warnf("could not submit test notification for %s notifier!", transport)
+				notLog.Warnf("could not submit test notification for %s notifier: %s", transport, err)
 				continue
 			}
 			notLog.Info("Test notification (successfully?) submitted, check the specified inbox")

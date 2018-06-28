@@ -9,13 +9,9 @@ import (
 )
 
 const (
-	CheckOk                   = "OK"
-	CheckErr                  = "FAILED"
-	eventMeasurementAge       = "measurement_age"
-	eventMeasurementValMin    = "measurement_min"
-	eventMeasurementValMax    = "measurement_max"
-	eventMeasurementValFaulty = "measurement_faulty"
-	eventTargetAll            = "all" // if event.Target is this value, all sensors will be checked
+	CheckOk        = "OK"
+	CheckErr       = "FAILED"
+	eventTargetAll = "all" // if event.Target is this value, all sensors will be checked
 )
 
 type checkType = struct {
