@@ -117,6 +117,7 @@ var cfgFile string
 func init() {
 	var (
 		debug        bool
+		noCache      bool
 		shouldNotify string
 		logFormat    string
 		api          string
@@ -137,6 +138,7 @@ Notifications for failing checks are sent only once,
 and then cached until the issue got resolved.
 To clear the cache, delete the file ~/.osem_notify_cache.yaml.
 `)
+	rootCmd.PersistentFlags().BoolVarP(&noCache, "no-cache", "", false, "send all notifications, ignoring results from previous runs. also don't update the cache.")
 
 	viper.BindPFlags(rootCmd.PersistentFlags()) // let flags override config
 

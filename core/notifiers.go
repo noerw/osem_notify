@@ -39,9 +39,10 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 	return notifier.New(box.NotifyConf.Notifications.Options)
 }
 
-func (results BoxCheckResults) SendNotifications(notifyTypes []string) error {
-	// TODO: expose flag to not use cache
-	results = results.filterChangedFromCache()
+func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache bool) error {
+	if useCache {
+		results = results.filterChangedFromCache()
+	}
 
 	toCheck := results.Size(notifyTypes)
 	if toCheck == 0 {
@@ -90,11 +91,13 @@ func (results BoxCheckResults) SendNotifications(notifyTypes []string) error {
 		}
 
 		// update cache (with /all/ changed results to reset status)
-		notifyLog.Debug("updating cache")
-		cacheError := updateCache(box, resultsBox)
-		if cacheError != nil {
-			notifyLog.Error("could not cache notification results: ", cacheError)
-			errs = append(errs, cacheError.Error())
+		if useCache {
+			notifyLog.Debug("updating cache")
+			cacheError := updateCache(box, resultsBox)
+			if cacheError != nil {
+				notifyLog.Error("could not cache notification results: ", cacheError)
+				errs = append(errs, cacheError.Error())
+			}
 		}
 
 		if len(resultsDue) != 0 {

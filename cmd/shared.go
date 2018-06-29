@@ -64,7 +64,8 @@ func checkAndNotify(boxIds []string) error {
 			return fmt.Errorf("invalid value %s for \"notify\"", notify)
 		}
 
-		return results.SendNotifications(types)
+		useCache := !viper.GetBool("no-cache")
+		return results.SendNotifications(types, useCache)
 	}
 	return nil
 }
