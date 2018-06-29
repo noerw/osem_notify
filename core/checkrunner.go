@@ -50,18 +50,18 @@ func (results BoxCheckResults) Log() {
 	}
 }
 
-func CheckBoxes(boxIds []string, defaultConf *NotifyConfig) (BoxCheckResults, error) {
-	log.Debug("Checking notifications for ", len(boxIds), " box(es)")
+func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error) {
+	log.Debug("Checking notifications for ", len(boxLocalConfs), " box(es)")
 
 	results := BoxCheckResults{}
 	errs := []string{}
 
 	// TODO: check boxes in parallel, capped at 5 at once
-	for _, boxId := range boxIds {
+	for boxId, localConf := range boxLocalConfs {
 		boxLogger := log.WithField("boxId", boxId)
 		boxLogger.Info("checking box for events")
 
-		box, res, err := checkBox(boxId, defaultConf)
+		box, res, err := checkBox(boxId, localConf)
 		if err != nil {
 			boxLogger.Errorf("could not run checks on box %s: %s", boxId, err)
 			errs = append(errs, err.Error())

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -34,41 +33,16 @@ func BoxIdValidator(cmd *cobra.Command, args []string) error {
 }
 
 func checkAndNotify(boxIds []string) error {
-
-	defaultNotifyConf := &core.NotifyConfig{}
-	err := viper.UnmarshalKey("defaultHealthchecks", defaultNotifyConf)
-	if err != nil {
-		return err
+	boxLocalConfig := map[string]*core.NotifyConfig{}
+	for _, boxID := range boxIds {
+		c, err := getNotifyConf(boxID)
+		if err != nil {
+			return err
+		}
+		boxLocalConfig[boxID] = c
 	}
 
-	// set default events, when no events are given. an empty events key indicates no checks are desired
-	if len(defaultNotifyConf.Events) == 0 {
-		allKeys := viper.AllKeys()
-		eventsDefined := false
-		for _, k := range allKeys {
-			if k == "defaulthealthchecks.events" {
-				eventsDefined = true
-				break
-			}
-		}
-		if !eventsDefined {
-			log.Debug("using default checks")
-			defaultNotifyConf.Events = []core.NotifyEvent{
-				core.NotifyEvent{
-					Type:      "measurement_age",
-					Target:    "all",
-					Threshold: "15m",
-				},
-				core.NotifyEvent{
-					Type:      "measurement_faulty",
-					Target:    "all",
-					Threshold: "",
-				},
-			}
-		}
-	}
-
-	results, err := core.CheckBoxes(boxIds, defaultNotifyConf)
+	results, err := core.CheckBoxes(boxLocalConfig)
 	if err != nil {
 		return err
 	}

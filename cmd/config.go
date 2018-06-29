@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/noerw/osem_notify/core"
 	"github.com/noerw/osem_notify/utils"
 )
 
@@ -58,4 +59,56 @@ func validateConfig() {
 			}
 		}
 	}
+}
+
+func getNotifyConf(boxID string) (*core.NotifyConfig, error) {
+	// config used when no configuration is present at all
+	conf := &core.NotifyConfig{
+		Events: []core.NotifyEvent{
+			core.NotifyEvent{
+				Type:      "measurement_age",
+				Target:    "all",
+				Threshold: "15m",
+			},
+			core.NotifyEvent{
+				Type:      "measurement_faulty",
+				Target:    "all",
+				Threshold: "",
+			},
+		},
+	}
+
+	// override with default configuration from file
+	// considering the case that .events may be defined but empty
+	// to allow to define no events, and don't leak shorter lists into
+	// previous longer ones
+	if keyDefined("healthchecks.default.events") {
+		conf.Events = []core.NotifyEvent{}
+	}
+	err := viper.UnmarshalKey("healthchecks.default", conf)
+	if err != nil {
+		return nil, err
+	}
+
+	// override with per box configuration from file
+	if keyDefined("healthchecks."+boxID+".events") {
+		conf.Events = []core.NotifyEvent{}
+	}
+	err = viper.UnmarshalKey("healthchecks." + boxID, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return conf, nil
+}
+
+// implement our own keyCheck, as viper.InConfig() does not work
+func keyDefined(key string) bool {
+	allConfKeys := viper.AllKeys()
+	for _, k := range allConfKeys {
+		if k == key {
+			return true
+		}
+	}
+	return false
 }

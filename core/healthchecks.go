@@ -14,7 +14,7 @@ const (
 	eventTargetAll = "all" // if event.Target is this value, all sensors will be checked
 )
 
-type checkType = struct {
+type checkType struct {
 	name      string                          // name that is used in config
 	toString  func(result CheckResult) string // error message when check failed
 	checkFunc func(event NotifyEvent, sensor Sensor, context Box) (CheckResult, error)

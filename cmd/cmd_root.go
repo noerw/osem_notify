@@ -23,21 +23,32 @@ var configHelpCmd = &cobra.Command{
 
 > Example configuration:
 
-  # override default health checks:
-  defaultHealthchecks:
-    notifications:
-      transport: email
-      options:
-        recipients:
-        - fridolina@example.com
-        - ruth.less@example.com
-    events:
-      - type: "measurement_age"
-        target: "all"    # all sensors
-        threshold: "15m" # any duration
-      - type: "measurement_faulty"
-        target: "all"
-        threshold: ""
+	healthchecks:
+		# override default health checks for all boxes
+		default:
+			notifications:
+				transport: email
+				options:
+					recipients:
+					- fridolina@example.com
+			events:
+				- type: "measurement_age"
+					target: "all"    # all sensors
+					threshold: "15m" # any duration
+				- type: "measurement_faulty"
+					target: "all"
+					threshold: ""
+
+		# override default health checks per box
+		593bcd656ccf3b0011791f5a:
+			notifications:
+				options:
+					recipients:
+					- ruth.less@example.com
+			events:
+				- type: "measurement_max"
+					target: "593bcd656ccf3b0011791f5b"
+					threshold: "40"
 
   # only needed when sending notifications via email
   email:
@@ -48,14 +59,14 @@ var configHelpCmd = &cobra.Command{
     from: hildegunst@example.com
 
 
-> possible values for defaultHealthchecks.notifications:
+> possible values for healthchecks.*.notifications:
 
   transport | options
   ----------|-------------------------------------
   email     | recipients: list of email addresses
 
 
-> possible values for defaultHealthchecks.events[]:
+> possible values for healthchecks.*.events[]:
 
   type               | description
   -------------------|---------------------------------------------------
