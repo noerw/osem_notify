@@ -12,8 +12,14 @@ import (
 	"github.com/noerw/osem_notify/utils"
 )
 
+var (
+	clearCache bool
+)
+
 func init() {
 	debugCmd.AddCommand(debugNotificationsCmd)
+	debugCacheCmd.PersistentFlags().BoolVarP(&clearCache, "clear", "", false, "reset the notifications cache")
+	debugCmd.AddCommand(debugCacheCmd)
 	rootCmd.AddCommand(debugCmd)
 }
 
@@ -32,13 +38,28 @@ var debugCmd = &cobra.Command{
 	},
 }
 
+var debugCacheCmd = &cobra.Command{
+	Use:   "cache",
+	Short: "Print or clear the notifications cache",
+	Long:  "osem_notify debug cache prints the contents of the notifications cache",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if clearCache {
+			return core.ClearCache()
+		}
+		core.PrintCache()
+		return nil
+	},
+}
+
+
 var debugNotificationsCmd = &cobra.Command{
 	Use:   "notifications",
 	Short: "Verify that notifications are working",
-	Long:  "osem_notify debug <feature> tests the functionality of the given feature",
+	Long:  `osem_notify debug notifications sends a test notification according
+to healthchecks.default.notifications.options as defined in the config file`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defaultNotifyConf := &core.NotifyConfig{}
-		err := viper.UnmarshalKey("defaultHealthchecks", defaultNotifyConf)
+		err := viper.UnmarshalKey("healthchecks.default", defaultNotifyConf)
 		if err != nil {
 			return err
 		}

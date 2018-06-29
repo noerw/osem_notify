@@ -39,7 +39,7 @@ var configHelpCmd = &cobra.Command{
 					target: "all"
 					threshold: ""
 
-		# override default health checks per box
+		# set health checks per box
 		593bcd656ccf3b0011791f5a:
 			notifications:
 				options:
@@ -129,14 +129,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&api, "api", "a", "https://api.opensensemap.org", "openSenseMap API to query against")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
-	rootCmd.PersistentFlags().StringVarP(&shouldNotify, "notify", "n", "", `if set, will send out notifications for the specified type of check result,
-Otherwise results are printed to stdout only.
+	rootCmd.PersistentFlags().StringVarP(&shouldNotify, "notify", "n", "", `If set, will send out notifications for the specified type of check result,
+otherwise results are printed to stdout only.
 Allowed values are "all", "error", "ok".
 You might want to run 'osem_notify debug notifications' first to verify everything works.
 
-Notifications for failing checks are sent only once,
-and then cached until the issue got resolved.
-To clear the cache, delete the file ~/.osem_notify_cache.yaml.
+Notifications for failing checks are sent only once, and then cached until the issue got
+resolved, unless --no-cache is set.
+To clear the cache, run 'osem_notify debug cache --clear'.
 `)
 	rootCmd.PersistentFlags().BoolVarP(&noCache, "no-cache", "", false, "send all notifications, ignoring results from previous runs. also don't update the cache.")
 
