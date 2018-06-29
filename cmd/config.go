@@ -91,10 +91,10 @@ func getNotifyConf(boxID string) (*core.NotifyConfig, error) {
 	}
 
 	// override with per box configuration from file
-	if keyDefined("healthchecks."+boxID+".events") {
+	if keyDefined("healthchecks." + boxID + ".events") {
 		conf.Events = []core.NotifyEvent{}
 	}
-	err = viper.UnmarshalKey("healthchecks." + boxID, conf)
+	err = viper.UnmarshalKey("healthchecks."+boxID, conf)
 	if err != nil {
 		return nil, err
 	}
