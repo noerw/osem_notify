@@ -37,6 +37,15 @@ type CheckResult struct {
 	Threshold string
 }
 
+func (r CheckResult) HasStatus(statusToCheck []string) bool {
+	for _, status := range statusToCheck {
+		if status == r.Status {
+			return true
+		}
+	}
+	return false
+}
+
 func (r CheckResult) EventID() string {
 	s := fmt.Sprintf("%s%s%s", r.Event, r.Target, r.Threshold)
 	hasher := sha256.New()

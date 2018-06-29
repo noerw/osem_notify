@@ -39,25 +39,23 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 	return notifier.New(box.NotifyConf.Notifications.Options)
 }
 
-func (results BoxCheckResults) SendNotifications() error {
-	// TODO: expose flags to not use cache, and to notify for checks turned CheckOk as well
-
+func (results BoxCheckResults) SendNotifications(notifyTypes []string) error {
+	// TODO: expose flag to not use cache
 	results = results.filterChangedFromCache()
 
-	nErr := results.Size(CheckErr)
-	if nErr == 0 {
+	toCheck := results.Size(notifyTypes)
+	if toCheck == 0 {
 		log.Info("No notifications due.")
 	} else {
-		log.Infof("Notifying for %v checks turned bad in total...", nErr)
+		log.Infof("Notifying for %v checks changing state to %v...", toCheck, notifyTypes)
 	}
-	log.Debugf("%v checks turned OK!", results.Size(CheckOk))
 
 	errs := []string{}
 	for box, resultsBox := range results {
 		// only submit results which are errors
 		resultsDue := []CheckResult{}
 		for _, result := range resultsBox {
-			if result.Status != CheckOk {
+			if result.HasStatus(notifyTypes) {
 				resultsDue = append(resultsDue, result)
 			}
 		}
@@ -91,7 +89,7 @@ func (results BoxCheckResults) SendNotifications() error {
 			}
 		}
 
-		// update cache (also with CheckOk results to reset status)
+		// update cache (with /all/ changed results to reset status)
 		notifyLog.Debug("updating cache")
 		cacheError := updateCache(box, resultsBox)
 		if cacheError != nil {
@@ -100,7 +98,7 @@ func (results BoxCheckResults) SendNotifications() error {
 		}
 
 		if len(resultsDue) != 0 {
-			notifyLog.Infof("Sent notification for %s via %s with %v new issues", box.Name, transport, len(resultsDue))
+			notifyLog.Infof("Sent notification for %s via %s with %v updated issues", box.Name, transport, len(resultsDue))
 		}
 	}
 

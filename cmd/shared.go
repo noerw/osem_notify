@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -49,8 +50,21 @@ func checkAndNotify(boxIds []string) error {
 
 	results.Log()
 
-	if viper.GetBool("notify") {
-		return results.SendNotifications()
+	notify := strings.ToLower(viper.GetString("notify"))
+	if notify != "" {
+		types := []string{}
+		switch notify {
+		case "all":
+			types = []string{core.CheckErr, core.CheckOk}
+		case "error", "err":
+			types = []string{core.CheckErr}
+		case "ok":
+			types = []string{core.CheckOk}
+		default:
+			return fmt.Errorf("invalid value %s for \"notify\"", notify)
+		}
+
+		return results.SendNotifications(types)
 	}
 	return nil
 }

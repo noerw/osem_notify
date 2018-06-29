@@ -116,8 +116,8 @@ var cfgFile string
 
 func init() {
 	var (
-		shouldNotify bool
 		debug        bool
+		shouldNotify string
 		logFormat    string
 		api          string
 	)
@@ -128,8 +128,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&api, "api", "a", "https://api.opensensemap.org", "openSenseMap API to query against")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, `if set, will send out notifications,
+	rootCmd.PersistentFlags().StringVarP(&shouldNotify, "notify", "n", "", `if set, will send out notifications for the specified type of check result,
 Otherwise results are printed to stdout only.
+Allowed values are "all", "error", "ok".
 You might want to run 'osem_notify debug notifications' first to verify everything works.
 
 Notifications for failing checks are sent only once,

@@ -10,11 +10,11 @@ import (
 
 type BoxCheckResults map[*Box][]CheckResult
 
-func (results BoxCheckResults) Size(status string) int {
+func (results BoxCheckResults) Size(statusToCheck []string) int {
 	size := 0
 	for _, boxResults := range results {
 		for _, result := range boxResults {
-			if status == result.Status || status == "" {
+			if result.HasStatus(statusToCheck) {
 				size++
 			}
 		}
