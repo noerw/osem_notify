@@ -60,3 +60,18 @@ func updateCache(box *Box, results []CheckResult) error {
 	}
 	return cache.WriteConfig()
 }
+
+func ClearCache() error {
+	fileName := utils.GetConfigFile("osem_notify_cache")
+	_, err := os.Stat(fileName)
+	if err != nil {
+		return nil
+	}
+	return os.Remove(fileName)
+}
+
+func PrintCache() {
+	for key, val := range cache.AllSettings() {
+		log.Infof("%20s: %v", key, val)
+	}
+}

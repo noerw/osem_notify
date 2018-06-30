@@ -9,16 +9,12 @@ import (
 )
 
 const (
-	CheckOk                   = "OK"
-	CheckErr                  = "FAILED"
-	eventMeasurementAge       = "measurement_age"
-	eventMeasurementValMin    = "measurement_min"
-	eventMeasurementValMax    = "measurement_max"
-	eventMeasurementValFaulty = "measurement_faulty"
-	eventTargetAll            = "all" // if event.Target is this value, all sensors will be checked
+	CheckOk        = "OK"
+	CheckErr       = "FAILED"
+	eventTargetAll = "all" // if event.Target is this value, all sensors will be checked
 )
 
-type checkType = struct {
+type checkType struct {
 	name      string                          // name that is used in config
 	toString  func(result CheckResult) string // error message when check failed
 	checkFunc func(event NotifyEvent, sensor Sensor, context Box) (CheckResult, error)
@@ -39,6 +35,15 @@ type CheckResult struct {
 
 	Event     string // these should be copied from the NotifyEvent
 	Threshold string
+}
+
+func (r CheckResult) HasStatus(statusToCheck []string) bool {
+	for _, status := range statusToCheck {
+		if status == r.Status {
+			return true
+		}
+	}
+	return false
 }
 
 func (r CheckResult) EventID() string {

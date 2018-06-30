@@ -5,7 +5,7 @@ Cross platform command line application to run health checks against sensor stat
 This tool lets you automatically check if senseBoxes are still runnning correctly,
 and when that's not the case, notifies you.
 Currently, email notifications are implemented, but other transports can be added easily.
-Implemented health checks are [described below](#possible-values-for-defaulthealthchecksevents), and new ones can be added just as easily (given some knowledge of programming).
+Implemented health checks are [described below](#available-healthchecks), and new ones can be added just as easily (given some knowledge of programming).
 
 The tool has multiple modes of operation:
 
@@ -61,7 +61,7 @@ Contributions are welcome!
 Check out the following locations for plugging in new functionality:
 
 - new notification transports: [core/notifiers.go](core/notifiers.go)
-- new health checks: [core/healthcheck*.go](core/healtchecks.go)
+- new health checks: [core/healthcheck*.go](core/healthchecks.go)
 - new commands: [cmd/](cmd/)
 
 Before committing and submitting a pull request, please run `go fmt ./ cmd/ core/`.

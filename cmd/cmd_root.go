@@ -23,21 +23,32 @@ var configHelpCmd = &cobra.Command{
 
 > Example configuration:
 
-  # override default health checks:
-  defaultHealthchecks:
-    notifications:
-      transport: email
-      options:
-        recipients:
-        - fridolina@example.com
-        - ruth.less@example.com
-    events:
-      - type: "measurement_age"
-        target: "all"    # all sensors
-        threshold: "15m" # any duration
-      - type: "measurement_faulty"
-        target: "all"
-        threshold: ""
+	healthchecks:
+		# override default health checks for all boxes
+		default:
+			notifications:
+				transport: email
+				options:
+					recipients:
+					- fridolina@example.com
+			events:
+				- type: "measurement_age"
+					target: "all"    # all sensors
+					threshold: "15m" # any duration
+				- type: "measurement_faulty"
+					target: "all"
+					threshold: ""
+
+		# set health checks per box
+		593bcd656ccf3b0011791f5a:
+			notifications:
+				options:
+					recipients:
+					- ruth.less@example.com
+			events:
+				- type: "measurement_max"
+					target: "593bcd656ccf3b0011791f5b"
+					threshold: "40"
 
   # only needed when sending notifications via email
   email:
@@ -48,14 +59,14 @@ var configHelpCmd = &cobra.Command{
     from: hildegunst@example.com
 
 
-> possible values for defaultHealthchecks.notifications:
+> possible values for healthchecks.*.notifications:
 
   transport | options
   ----------|-------------------------------------
   email     | recipients: list of email addresses
 
 
-> possible values for defaultHealthchecks.events[]:
+> possible values for healthchecks.*.events[]:
 
   type               | description
   -------------------|---------------------------------------------------
@@ -105,8 +116,9 @@ var cfgFile string
 
 func init() {
 	var (
-		shouldNotify bool
 		debug        bool
+		noCache      bool
+		shouldNotify string
 		logFormat    string
 		api          string
 	)
@@ -117,14 +129,16 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&api, "api", "a", "https://api.opensensemap.org", "openSenseMap API to query against")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "logformat", "l", "plain", "log format, can be plain or json")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable verbose logging")
-	rootCmd.PersistentFlags().BoolVarP(&shouldNotify, "notify", "n", false, `if set, will send out notifications,
-Otherwise results are printed to stdout only.
+	rootCmd.PersistentFlags().StringVarP(&shouldNotify, "notify", "n", "", `If set, will send out notifications for the specified type of check result,
+otherwise results are printed to stdout only.
+Allowed values are "all", "error", "ok".
 You might want to run 'osem_notify debug notifications' first to verify everything works.
 
-Notifications for failing checks are sent only once,
-and then cached until the issue got resolved.
-To clear the cache, delete the file ~/.osem_notify_cache.yaml.
+Notifications for failing checks are sent only once, and then cached until the issue got
+resolved, unless --no-cache is set.
+To clear the cache, run 'osem_notify debug cache --clear'.
 `)
+	rootCmd.PersistentFlags().BoolVarP(&noCache, "no-cache", "", false, "send all notifications, ignoring results from previous runs. also don't update the cache.")
 
 	viper.BindPFlags(rootCmd.PersistentFlags()) // let flags override config
 

@@ -10,11 +10,11 @@ import (
 
 type BoxCheckResults map[*Box][]CheckResult
 
-func (results BoxCheckResults) Size(status string) int {
+func (results BoxCheckResults) Size(statusToCheck []string) int {
 	size := 0
 	for _, boxResults := range results {
 		for _, result := range boxResults {
-			if status == result.Status || status == "" {
+			if result.HasStatus(statusToCheck) {
 				size++
 			}
 		}
@@ -42,24 +42,26 @@ func (results BoxCheckResults) Log() {
 				countErr++
 			}
 		}
-		if countErr == 0 {
+		if len(boxResults) == 0 {
+			boxLog.Infof("%s: no checks defined", box.Name)
+		} else if countErr == 0 {
 			boxLog.Infof("%s: all is fine!", box.Name)
 		}
 	}
 }
 
-func CheckBoxes(boxIds []string, defaultConf *NotifyConfig) (BoxCheckResults, error) {
-	log.Debug("Checking notifications for ", len(boxIds), " box(es)")
+func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error) {
+	log.Debug("Checking notifications for ", len(boxLocalConfs), " box(es)")
 
 	results := BoxCheckResults{}
 	errs := []string{}
 
 	// TODO: check boxes in parallel, capped at 5 at once
-	for _, boxId := range boxIds {
+	for boxId, localConf := range boxLocalConfs {
 		boxLogger := log.WithField("boxId", boxId)
 		boxLogger.Info("checking box for events")
 
-		box, res, err := checkBox(boxId, defaultConf)
+		box, res, err := checkBox(boxId, localConf)
 		if err != nil {
 			boxLogger.Errorf("could not run checks on box %s: %s", boxId, err)
 			errs = append(errs, err.Error())
