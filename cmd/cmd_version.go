@@ -8,8 +8,8 @@ import (
 
 // TODO: insert automatically via build step?
 const (
-	VERSION   = "1.0.7"
-	BUILDDATE = "2018-06-26T00:59:00+02"
+	VERSION   = "1.1.1"
+	BUILDDATE = "2018-07-04T19:42:00+02"
 )
 
 func init() {

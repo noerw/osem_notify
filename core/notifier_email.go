@@ -47,15 +47,34 @@ func (n EmailNotifier) New(config interface{}) (AbstractNotifier, error) {
 }
 
 func (n EmailNotifier) ComposeNotification(box *Box, checks []CheckResult) Notification {
-	resultTexts := []string{}
+	errTexts := []string{}
+	resolvedTexts := []string{}
 	for _, check := range checks {
-		resultTexts = append(resultTexts, check.String())
+		if check.Status == CheckErr {
+			errTexts = append(errTexts, check.String())
+		} else {
+			resolvedTexts = append(resolvedTexts, check.String())
+		}
+	}
+
+	var (
+		resolved     string
+		resolvedList string
+		errList      string
+	)
+	if len(resolvedTexts) != 0 {
+		resolvedList = fmt.Sprintf("Resolved issue(s):\n\n%s\n\n", strings.Join(resolvedTexts, "\n"))
+	}
+	if len(errTexts) != 0 {
+		errList = fmt.Sprintf("New issue(s):\n\n%s\n\n", strings.Join(errTexts, "\n"))
+	} else {
+		resolved = "resolved "
 	}
 
 	return Notification{
-		Subject: fmt.Sprintf("Issues with your box \"%s\" on opensensemap.org!", box.Name),
-		Body: fmt.Sprintf("A check at %s identified the following issue(s) with your box %s:\n\n%s\n\nYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
-			time.Now().Round(time.Minute), box.Name, strings.Join(resultTexts, "\n"), box.Id),
+		Subject: fmt.Sprintf("Issues %swith your box \"%s\" on opensensemap.org!", resolved, box.Name),
+		Body: fmt.Sprintf("A check at %s identified the following updates for your box \"%s\":\n\n%s%sYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
+			time.Now().Round(time.Minute), box.Name, errList, resolvedList, box.Id),
 	}
 }
 

@@ -55,9 +55,9 @@ func (r CheckResult) EventID() string {
 
 func (r CheckResult) String() string {
 	if r.Status == CheckOk {
-		return fmt.Sprintf("%s %s (on sensor %s (%s) with value %s)\n", r.Event, r.Status, r.TargetName, r.Target, r.Value)
+		return fmt.Sprintf("%s: %s (on sensor %s (%s) with value %s)\n", r.Status, r.Event, r.TargetName, r.Target, r.Value)
 	} else {
-		return fmt.Sprintf("%s: %s"+"\n", r.Status, checkers[r.Event].toString(r))
+		return fmt.Sprintf("%s: %s\n", r.Status, checkers[r.Event].toString(r))
 	}
 }
 
