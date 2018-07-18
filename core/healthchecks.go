@@ -72,6 +72,10 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 				continue
 			}
 
+			if event.Target != s.Id && event.Target != eventTargetAll {
+				continue
+			}
+
 			checker := checkers[event.Type]
 			if checker.checkFunc == nil {
 				boxLogger.Warnf("ignoring unknown event type %s", event.Type)
