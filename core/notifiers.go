@@ -10,6 +10,7 @@ import (
 
 var Notifiers = map[string]AbstractNotifier{
 	"email": EmailNotifier{},
+	"xmpp":  XmppNotifier{},
 }
 
 type AbstractNotifier interface {

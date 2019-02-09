@@ -42,6 +42,7 @@ Run `osem_notify help config` for details and an example configuration.
 `transport` | `options`
 ------------|------------
 `email`     | `recipients`: list of email addresses
+`xmpp`      | `recipients`: list of JIDs
 
 Want more? [add it](#contribute)!
 

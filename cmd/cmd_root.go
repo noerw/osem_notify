@@ -23,32 +23,32 @@ var configHelpCmd = &cobra.Command{
 
 > Example configuration:
 
-	healthchecks:
-		# override default health checks for all boxes
-		default:
-			notifications:
-				transport: email
-				options:
-					recipients:
-					- fridolina@example.com
-			events:
-				- type: "measurement_age"
-					target: "all"    # all sensors
-					threshold: "15m" # any duration
-				- type: "measurement_faulty"
-					target: "all"
-					threshold: ""
+  healthchecks:
+    # override default health checks for all boxes
+    default:
+      notifications:
+        transport: email
+        options:
+          recipients:
+          - fridolina@example.com
+      events:
+        - type: "measurement_age"
+          target: "all"    # all sensors
+          threshold: "15m" # any duration
+        - type: "measurement_faulty"
+          target: "all"
+          threshold: ""
 
-		# set health checks per box
-		593bcd656ccf3b0011791f5a:
-			notifications:
-				options:
-					recipients:
-					- ruth.less@example.com
-			events:
-				- type: "measurement_max"
-					target: "593bcd656ccf3b0011791f5b"
-					threshold: "40"
+    # set health checks per box
+    593bcd656ccf3b0011791f5a:
+      notifications:
+        options:
+          recipients:
+          - ruth.less@example.com
+      events:
+        - type: "measurement_max"
+          target: "593bcd656ccf3b0011791f5b"
+          threshold: "40"
 
   # only needed when sending notifications via email
   email:
@@ -58,12 +58,20 @@ var configHelpCmd = &cobra.Command{
     pass: bar
     from: hildegunst@example.com
 
+  # only needed when sending notifications via XMPP
+  xmpp:
+    host: jabber.example.com:5222
+    user: foo@jabber.example.com
+    pass: bar
+    startls: true
+
 
 > possible values for healthchecks.*.notifications:
 
   transport | options
   ----------|-------------------------------------
   email     | recipients: list of email addresses
+  xmpp      | recipients: list of JIDs
 
 
 > possible values for healthchecks.*.events[]:
