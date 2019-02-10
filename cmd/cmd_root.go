@@ -104,6 +104,7 @@ var rootCmd = &cobra.Command{
 	Use:   "osem_notify",
 	Short: "Root command displaying help",
 	Long:  "Run healthchecks and send notifications for boxes on opensensemap.org",
+	Version: "1.3.0",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// set up logger
 		log.SetOutput(os.Stdout)
