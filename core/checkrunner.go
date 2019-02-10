@@ -23,6 +23,16 @@ func (results BoxCheckResults) Size(statusToCheck []string) int {
 }
 
 func (results BoxCheckResults) Log() {
+	// collect statistics for summary print
+	boxesSkipped := 0
+	boxesWithIssues := 0
+	boxesWithoutIssues := 0
+	failedChecks := 0
+	errorsByEvent := map[string]int{}
+	for event, _ := range checkers {
+		errorsByEvent[event] = 0
+	}
+
 	for box, boxResults := range results {
 		boxLog := log.WithFields(log.Fields{
 			"boxId": box.Id,
@@ -40,13 +50,39 @@ func (results BoxCheckResults) Log() {
 			} else {
 				resultLog.Warnf("%s: %s", box.Name, r)
 				countErr++
+				errorsByEvent[r.Event]++
 			}
 		}
+
 		if len(boxResults) == 0 {
 			boxLog.Infof("%s: no checks defined", box.Name)
+			boxesSkipped++
 		} else if countErr == 0 {
 			boxLog.Infof("%s: all is fine!", box.Name)
+			boxesWithoutIssues++
+		} else {
+			// we logged the error(s) already
+			boxesWithIssues++
+			failedChecks += countErr
 		}
+	}
+
+	// print summary
+	boxesChecked := boxesWithIssues + boxesWithoutIssues
+	if boxesChecked > 1 {
+		summaryLog := log.WithFields(log.Fields{
+			"boxesChecked":  boxesChecked,
+			"boxesSkipped":  boxesSkipped, // boxes are also skipped when they never submitted any measurements before!
+			"boxesOk":       boxesWithoutIssues,
+			"boxesErr":      boxesWithIssues,
+			"failedChecks":  failedChecks,
+			"errorsByEvent": errorsByEvent,
+		})
+		summaryLog.Infof(
+			"check summary: %v of %v checked boxes are fine (%v had no checks)!",
+			boxesWithoutIssues,
+			boxesChecked,
+			boxesSkipped)
 	}
 }
 
@@ -56,7 +92,7 @@ func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error)
 	results := BoxCheckResults{}
 	errs := []string{}
 
-	// TODO: check boxes in parallel, capped at 5 at once
+	// @TODO: check boxes in parallel, capped at 5 at once. and/or rate limit?
 	for boxId, localConf := range boxLocalConfs {
 		boxLogger := log.WithField("boxId", boxId)
 		boxLogger.Info("checking box for events")
@@ -77,6 +113,7 @@ func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error)
 }
 
 func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, error) {
+	// @FIXME: core package should be independent of viper!
 	osem := NewOsemClient(viper.GetString("api"))
 
 	// get box data
