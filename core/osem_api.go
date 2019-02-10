@@ -26,7 +26,10 @@ func NewOsemClient(endpoint string) *OsemClient {
 func (client *OsemClient) GetBox(boxId string) (*Box, error) {
 	box := &Box{}
 	fail := &OsemError{}
-	client.sling.New().Path("boxes/").Path(boxId).Receive(box, fail)
+	_, err := client.sling.New().Path("boxes/").Path(boxId).Receive(box, fail)
+	if err != nil {
+		return nil, err
+	}
 	if fail.Message != "" {
 		return box, errors.New("could not fetch box: " + fail.Message)
 	}
@@ -36,7 +39,10 @@ func (client *OsemClient) GetBox(boxId string) (*Box, error) {
 func (client *OsemClient) GetAllBoxes() (*[]Box, error) {
 	boxes := &[]Box{}
 	fail := &OsemError{}
-	client.sling.New().Path("boxes").Receive(boxes, fail)
+	_, err := client.sling.New().Path("boxes").Receive(boxes, fail)
+	if err != nil {
+		return nil, err
+	}
 	if fail.Message != "" {
 		return boxes, errors.New("could not fetch boxes: " + fail.Message)
 	}
