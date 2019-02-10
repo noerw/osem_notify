@@ -33,6 +33,16 @@ func (client *OsemClient) GetBox(boxId string) (*Box, error) {
 	return box, nil
 }
 
+func (client *OsemClient) GetAllBoxes() (*[]Box, error) {
+	boxes := &[]Box{}
+	fail := &OsemError{}
+	client.sling.New().Path("boxes").Receive(boxes, fail)
+	if fail.Message != "" {
+		return boxes, errors.New("could not fetch boxes: " + fail.Message)
+	}
+	return boxes, nil
+}
+
 type NotifyEvent struct {
 	Type      string `json:"type"`
 	Target    string `json:"target"`

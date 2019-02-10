@@ -18,6 +18,7 @@ func init() {
 	viper.BindPFlags(watchCmd.PersistentFlags())
 
 	watchCmd.AddCommand(watchBoxesCmd)
+	watchCmd.AddCommand(watchAllCmd)
 	rootCmd.AddCommand(watchCmd)
 }
 
@@ -47,6 +48,30 @@ var watchBoxesCmd = &cobra.Command{
 		for {
 			<-ticker
 			err = checkAndNotify(args)
+			if err != nil {
+				// we already did retries, so exiting seems appropriate
+				return err
+			}
+		}
+	},
+}
+
+var watchAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "watch all boxes registered on the map",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		interval := viper.GetDuration("interval") * time.Minute
+		ticker = time.NewTicker(interval).C
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		err := checkAndNotifyAll()
+		if err != nil {
+			return err
+		}
+		for {
+			<-ticker
+			err = checkAndNotifyAll()
 			if err != nil {
 				// we already did retries, so exiting seems appropriate
 				return err

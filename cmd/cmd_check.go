@@ -6,6 +6,7 @@ import (
 
 func init() {
 	checkCmd.AddCommand(checkBoxCmd)
+	checkCmd.AddCommand(checkAllCmd)
 	rootCmd.AddCommand(checkCmd)
 }
 
@@ -24,5 +25,14 @@ var checkBoxCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		return checkAndNotify(args)
+	},
+}
+
+var checkAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "one-off check on all boxes registered on the opensensemap instance",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		return checkAndNotifyAll()
 	},
 }

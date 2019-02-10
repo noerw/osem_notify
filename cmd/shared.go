@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -31,6 +32,26 @@ func BoxIdValidator(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
+}
+
+func checkAndNotifyAll() error {
+	log.Info("getting list of boxes...")
+
+	// fetch all boxes first & extract their IDs
+	osem := core.NewOsemClient(viper.GetString("api"))
+	boxes, err := osem.GetAllBoxes()
+	if err != nil {
+		return err
+	}
+	boxIDs := make([]string, len(*boxes))
+	for i, box := range *boxes {
+		boxIDs[i] = box.Id
+	}
+
+	// then check each box individually. we only pass the ID
+	// and fetch again, because box metadata is different in
+	// GetAllBoxes and GetBox..
+	return checkAndNotify(boxIDs)
 }
 
 func checkAndNotify(boxIds []string) error {
