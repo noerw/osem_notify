@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type BoxCheckResults map[*Box][]CheckResult
@@ -86,7 +85,7 @@ func (results BoxCheckResults) Log() {
 	}
 }
 
-func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error) {
+func CheckBoxes(boxLocalConfs map[string]*NotifyConfig, osem *OsemClient) (BoxCheckResults, error) {
 	log.Debug("Checking notifications for ", len(boxLocalConfs), " box(es)")
 
 	results := BoxCheckResults{}
@@ -97,7 +96,7 @@ func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error)
 		boxLogger := log.WithField("boxId", boxId)
 		boxLogger.Info("checking box for events")
 
-		box, res, err := checkBox(boxId, localConf)
+		box, res, err := checkBox(boxId, localConf, osem)
 		if err != nil {
 			boxLogger.Errorf("could not run checks on box %s: %s", boxId, err)
 			errs = append(errs, err.Error())
@@ -112,10 +111,7 @@ func CheckBoxes(boxLocalConfs map[string]*NotifyConfig) (BoxCheckResults, error)
 	return results, nil
 }
 
-func checkBox(boxId string, defaultConf *NotifyConfig) (*Box, []CheckResult, error) {
-	// @FIXME: core package should be independent of viper!
-	osem := NewOsemClient(viper.GetString("api"))
-
+func checkBox(boxId string, defaultConf *NotifyConfig, osem *OsemClient) (*Box, []CheckResult, error) {
 	// get box data
 	box, err := osem.GetBox(boxId)
 	if err != nil {

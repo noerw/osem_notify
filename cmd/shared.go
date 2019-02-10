@@ -43,7 +43,8 @@ func checkAndNotify(boxIds []string) error {
 		boxLocalConfig[boxID] = c
 	}
 
-	results, err := core.CheckBoxes(boxLocalConfig)
+	osem := core.NewOsemClient(viper.GetString("api"))
+	results, err := core.CheckBoxes(boxLocalConfig, osem)
 	if err != nil {
 		return err
 	}
