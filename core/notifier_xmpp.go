@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var client = &xmpp.Client{} // @Hacky
+var xmppClient = &xmpp.Client{} // @Hacky
 
 // box config required for the XmppNotifier (TransportConfig.Options)
 type XmppNotifier struct {
@@ -27,12 +27,12 @@ func (n XmppNotifier) New(config TransportConfig) (AbstractNotifier, error) {
 
 	// establish connection with server once, and share it accross instances
 	// @Hacky
-	if client.JID() == "" {
+	if xmppClient.JID() == "" {
 		c, err := connectXmpp()
 		if err != nil {
 			return nil, err
 		}
-		client = c
+		xmppClient = c
 	}
 
 	// assign configuration to the notifier after ensuring the correct type.
@@ -65,12 +65,12 @@ func (n XmppNotifier) New(config TransportConfig) (AbstractNotifier, error) {
 }
 
 func (n XmppNotifier) Submit(notification Notification) error {
-	if client.JID() == "" {
+	if xmppClient.JID() == "" {
 		return fmt.Errorf("xmpp client not correctly initialized!")
 	}
 
 	for _, recipient := range n.Recipients {
-		_, err := client.Send(xmpp.Chat{
+		_, err := xmppClient.Send(xmpp.Chat{
 			Remote:  recipient,
 			Subject: notification.Subject,
 			Text:    fmt.Sprintf("%s\n\n%s", notification.Subject, notification.Body),

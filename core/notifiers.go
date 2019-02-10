@@ -10,6 +10,7 @@ import (
 
 var Notifiers = map[string]AbstractNotifier{
 	"email": EmailNotifier{},
+	"slack": SlackNotifier{},
 	"xmpp":  XmppNotifier{},
 }
 
@@ -19,6 +20,7 @@ type AbstractNotifier interface {
 }
 
 type Notification struct {
+	Status  string // one of CheckOk | CheckErr
 	Body    string
 	Subject string
 }
@@ -137,17 +139,21 @@ func ComposeNotification(box *Box, checks []CheckResult) Notification {
 		resolved     string
 		resolvedList string
 		errList      string
+		status string
 	)
 	if len(resolvedTexts) != 0 {
 		resolvedList = fmt.Sprintf("Resolved issue(s):\n\n%s\n\n", strings.Join(resolvedTexts, "\n"))
 	}
 	if len(errTexts) != 0 {
 		errList = fmt.Sprintf("New issue(s):\n\n%s\n\n", strings.Join(errTexts, "\n"))
+		status = CheckErr
 	} else {
 		resolved = "resolved "
+		status = CheckOk
 	}
 
 	return Notification{
+		Status: status,
 		Subject: fmt.Sprintf("Issues %swith your box \"%s\" on opensensemap.org!", resolved, box.Name),
 		Body: fmt.Sprintf("A check at %s identified the following updates for your box \"%s\":\n\n%s%sYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
 			time.Now().Round(time.Minute), box.Name, errList, resolvedList, box.Id),

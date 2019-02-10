@@ -59,6 +59,10 @@ var configHelpCmd = &cobra.Command{
     pass: bar
     from: hildegunst@example.com
 
+  # only needed when sending notifications via Slack
+  slack:
+    webhook: https://hooks.slack.com/services/T030YPW07/xxxxxxx/xxxxxxxxxxxxxxxxxxxxxx
+
   # only needed when sending notifications via XMPP
   xmpp:
     host: jabber.example.com:5222
@@ -72,6 +76,7 @@ var configHelpCmd = &cobra.Command{
   transport | options
   ----------|-------------------------------------
   email     | recipients: list of email addresses
+  slack     | -
   xmpp      | recipients: list of JIDs
 
 
