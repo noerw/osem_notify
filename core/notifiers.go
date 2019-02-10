@@ -139,7 +139,7 @@ func ComposeNotification(box *Box, checks []CheckResult) Notification {
 		resolved     string
 		resolvedList string
 		errList      string
-		status string
+		status       string
 	)
 	if len(resolvedTexts) != 0 {
 		resolvedList = fmt.Sprintf("Resolved issue(s):\n\n%s\n\n", strings.Join(resolvedTexts, "\n"))
@@ -153,9 +153,9 @@ func ComposeNotification(box *Box, checks []CheckResult) Notification {
 	}
 
 	return Notification{
-		Status: status,
+		Status:  status,
 		Subject: fmt.Sprintf("Issues %swith your box \"%s\" on opensensemap.org!", resolved, box.Name),
-		Body: fmt.Sprintf("A check at %s identified the following updates for your box \"%s\":\n\n%s%sYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
+		Body: fmt.Sprintf("A check at %s identified the following updates for your box \"%s\":\n\n%s%sYou may visit https://opensensemap.org/explore/%s for more details.",
 			time.Now().Round(time.Minute), box.Name, errList, resolvedList, box.Id),
 	}
 }

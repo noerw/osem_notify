@@ -11,8 +11,8 @@ import (
 
 var slackClient = sling.New().Client(&http.Client{})
 
-var notificationColors = map[string]string {
-	CheckOk: "#00ff00",
+var notificationColors = map[string]string{
+	CheckOk:  "#00ff00",
 	CheckErr: "#ff0000",
 }
 
@@ -47,9 +47,9 @@ func (n SlackNotifier) New(config TransportConfig) (AbstractNotifier, error) {
 
 func (n SlackNotifier) Submit(notification Notification) error {
 	message := &SlackMessage{
-		Username: "osem_notify box healthcheck",
+		Username:    "osem_notify box healthcheck",
 		Text:        notification.Subject,
-		Attachments: []SlackAttachment{ { notification.Body, notificationColors[notification.Status] } },
+		Attachments: []SlackAttachment{{notification.Body, notificationColors[notification.Status]}},
 	}
 
 	req, err := slackClient.Post(n.webhook).BodyJSON(message).Request()

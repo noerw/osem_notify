@@ -2,7 +2,8 @@ package core
 
 import (
 	"fmt"
-	"strconv"
+
+	"github.com/noerw/osem_notify/utils"
 )
 
 var checkMeasurementFaulty = checkType{
@@ -20,7 +21,7 @@ var checkMeasurementFaulty = checkType{
 			Status:     CheckOk,
 		}
 
-		val, err := strconv.ParseFloat(s.LastMeasurement.Value, 64)
+		val, err := utils.ParseFloat(s.LastMeasurement.Value)
 		if err != nil {
 			return result, err
 		}
@@ -42,8 +43,10 @@ type faultyValue struct {
 }
 
 var faultyVals = map[faultyValue]bool{
+	// @TODO: add UV & light sensor: check for 0 if not sunset based on boxlocation
+	// @TODO: add BME280 and other sensors..
 	faultyValue{sensor: "BMP280", val: 0.0}:  true,
-	faultyValue{sensor: "HDC1008", val: 0.0}: true,
+	faultyValue{sensor: "HDC1008", val: 0.0}: true, // @FIXME: check should be on luftfeuchte only!
 	faultyValue{sensor: "HDC1008", val: -40}: true,
-	faultyValue{sensor: "SDS 011", val: 0.0}: true,
+	faultyValue{sensor: "SDS 011", val: 0.0}: true, // @FIXME: 0.0 seems to be a correct value, need to check over longer periods
 }

@@ -2,7 +2,8 @@ package core
 
 import (
 	"fmt"
-	"strconv"
+
+	"github.com/noerw/osem_notify/utils"
 )
 
 const (
@@ -36,12 +37,12 @@ func validateMeasurementMinMax(e NotifyEvent, s Sensor, b Box) (CheckResult, err
 		Status:     CheckOk,
 	}
 
-	thresh, err := strconv.ParseFloat(e.Threshold, 64)
+	thresh, err := utils.ParseFloat(e.Threshold)
 	if err != nil {
 		return result, err
 	}
 
-	val, err := strconv.ParseFloat(s.LastMeasurement.Value, 64)
+	val, err := utils.ParseFloat(s.LastMeasurement.Value)
 	if err != nil {
 		return result, err
 	}

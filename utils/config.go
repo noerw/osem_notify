@@ -3,6 +3,8 @@ package utils
 import (
 	"os"
 	"path"
+	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -69,4 +71,8 @@ func PrintConfig() {
 
 func printKV(key, val interface{}) {
 	log.Debugf("%20s: %v", key, val)
+}
+
+func ParseFloat(val string) (float64, error) {
+	return strconv.ParseFloat(strings.TrimSpace(val), 64)
 }

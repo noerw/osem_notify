@@ -84,7 +84,7 @@ func (box Box) RunChecks() ([]CheckResult, error) {
 
 			result, err := checker.checkFunc(event, s, box)
 			if err != nil {
-				boxLogger.Errorf("error checking event %s", event.Type)
+				boxLogger.Errorf("error checking event %s: %v", event.Type, err)
 			}
 
 			results = append(results, result)

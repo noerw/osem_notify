@@ -86,7 +86,7 @@ func (results BoxCheckResults) Log() {
 }
 
 func CheckBoxes(boxLocalConfs map[string]*NotifyConfig, osem *OsemClient) (BoxCheckResults, error) {
-	log.Debug("Checking notifications for ", len(boxLocalConfs), " box(es)")
+	log.Info("Checking notifications for ", len(boxLocalConfs), " box(es)")
 
 	results := BoxCheckResults{}
 	errs := []string{}
@@ -94,7 +94,7 @@ func CheckBoxes(boxLocalConfs map[string]*NotifyConfig, osem *OsemClient) (BoxCh
 	// @TODO: check boxes in parallel, capped at 5 at once. and/or rate limit?
 	for boxId, localConf := range boxLocalConfs {
 		boxLogger := log.WithField("boxId", boxId)
-		boxLogger.Info("checking box for events")
+		boxLogger.Debug("checking box for events")
 
 		box, res, err := checkBox(boxId, localConf, osem)
 		if err != nil {

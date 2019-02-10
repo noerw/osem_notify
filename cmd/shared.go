@@ -93,14 +93,14 @@ func checkAndNotify(boxIds []string) error {
 }
 
 var ( // values are set during cli flag parsing of checkAllCmd & watchAllCmd
-	date string
-	exposure string
-	grouptag string
-	model string
+	date       string
+	exposure   string
+	grouptag   string
+	model      string
 	phenomenon string
 )
 
-func parseBoxFilters () core.BoxFilters {
+func parseBoxFilters() core.BoxFilters {
 	filters := core.BoxFilters{}
 	if date != "" {
 		filters.Date = date // TODO: parse date & format as ISO date?

@@ -65,11 +65,12 @@ func (n EmailNotifier) Submit(notification Notification) error {
 
 	from := viper.GetString("email.from")
 	body := fmt.Sprintf(
-		"From: openSenseMap Notifier <%s>\nDate: %s\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s",
+		"From: openSenseMap Notifier <%s>\nDate: %s\nSubject: %s\nContent-Type: text/plain; charset=\"utf-8\"\n\n%s%s",
 		from,
 		time.Now().Format(time.RFC1123Z),
 		notification.Subject,
-		notification.Body)
+		notification.Body,
+		"\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)")
 
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.

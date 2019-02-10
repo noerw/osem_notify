@@ -9,7 +9,7 @@ import (
 )
 
 type OsemError struct {
-	Code    int    `json:"code"`
+	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
