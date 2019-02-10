@@ -13,6 +13,14 @@ type OsemError struct {
 	Message string `json:"message"`
 }
 
+type BoxFilters struct {
+	Date       string `url:"date,omitempty"`
+	Exposure   string `url:"exposure,omitempty"`
+	Grouptag   string `url:"grouptag,omitempty"`
+	Model      string `url:"model,omitempty"`
+	Phenomenon string `url:"phenomenon,omitempty"`
+}
+
 type OsemClient struct {
 	sling *sling.Sling
 }
@@ -36,10 +44,10 @@ func (client *OsemClient) GetBox(boxId string) (*Box, error) {
 	return box, nil
 }
 
-func (client *OsemClient) GetAllBoxes() (*[]Box, error) {
-	boxes := &[]Box{}
+func (client *OsemClient) GetAllBoxes(params BoxFilters) (*[]BoxMinimal, error) {
+	boxes := &[]BoxMinimal{}
 	fail := &OsemError{}
-	_, err := client.sling.New().Path("boxes").Receive(boxes, fail)
+	_, err := client.sling.New().Path("boxes?minimal=true").QueryStruct(params).Receive(boxes, fail)
 	if err != nil {
 		return nil, err
 	}
@@ -80,4 +88,9 @@ type Box struct {
 	Name       string        `json:"name"`
 	Sensors    []Sensor      `json:"sensors"`
 	NotifyConf *NotifyConfig `json:"healthcheck"`
+}
+
+type BoxMinimal struct {
+	Id   string `json:"_id"`
+	Name string `json:"name"`
 }

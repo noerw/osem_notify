@@ -5,6 +5,11 @@ import (
 )
 
 func init() {
+	checkAllCmd.PersistentFlags().StringVarP(&date, "date", "", "", "filter boxes by date AND phenomenon")
+	checkAllCmd.PersistentFlags().StringVarP(&exposure, "exposure", "", "", "filter boxes by exposure")
+	checkAllCmd.PersistentFlags().StringVarP(&grouptag, "grouptag", "", "", "filter boxes by grouptag")
+	checkAllCmd.PersistentFlags().StringVarP(&model, "model", "", "", "filter boxes by model")
+	checkAllCmd.PersistentFlags().StringVarP(&phenomenon, "phenomenon", "", "", "filter boxes by phenomenon AND date")
 	checkCmd.AddCommand(checkBoxCmd)
 	checkCmd.AddCommand(checkAllCmd)
 	rootCmd.AddCommand(checkCmd)
@@ -33,6 +38,9 @@ var checkAllCmd = &cobra.Command{
 	Short: "one-off check on all boxes registered on the opensensemap instance",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		return checkAndNotifyAll()
+
+		// no flag validation, as the API already does a good job at that
+
+		return checkAndNotifyAll(parseBoxFilters())
 	},
 }

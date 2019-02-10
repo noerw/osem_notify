@@ -34,12 +34,12 @@ func BoxIdValidator(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func checkAndNotifyAll() error {
+func checkAndNotifyAll(filters core.BoxFilters) error {
 	log.Info("getting list of boxes...")
 
 	// fetch all boxes first & extract their IDs
 	osem := core.NewOsemClient(viper.GetString("api"))
-	boxes, err := osem.GetAllBoxes()
+	boxes, err := osem.GetAllBoxes(filters)
 	if err != nil {
 		return err
 	}
@@ -90,4 +90,33 @@ func checkAndNotify(boxIds []string) error {
 		return results.SendNotifications(types, useCache)
 	}
 	return nil
+}
+
+var ( // values are set during cli flag parsing of checkAllCmd & watchAllCmd
+	date string
+	exposure string
+	grouptag string
+	model string
+	phenomenon string
+)
+
+func parseBoxFilters () core.BoxFilters {
+	filters := core.BoxFilters{}
+	if date != "" {
+		filters.Date = date // TODO: parse date & format as ISO date?
+	}
+	if exposure != "" {
+		filters.Exposure = exposure
+	}
+	if grouptag != "" {
+		filters.Grouptag = grouptag
+	}
+	if model != "" {
+		filters.Model = model
+	}
+	if phenomenon != "" {
+		filters.Phenomenon = phenomenon
+	}
+
+	return filters
 }

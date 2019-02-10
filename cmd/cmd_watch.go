@@ -14,6 +14,11 @@ func init() {
 		watchInterval int
 	)
 
+	watchAllCmd.PersistentFlags().StringVarP(&date, "date", "", "", "filter boxes by date")
+	watchAllCmd.PersistentFlags().StringVarP(&exposure, "exposure", "", "", "filter boxes by exposure")
+	watchAllCmd.PersistentFlags().StringVarP(&grouptag, "grouptag", "", "", "filter boxes by grouptag")
+	watchAllCmd.PersistentFlags().StringVarP(&model, "model", "", "", "filter boxes by model")
+	watchAllCmd.PersistentFlags().StringVarP(&phenomenon, "phenomenon", "", "", "filter boxes by phenomenon")
 	watchCmd.PersistentFlags().IntVarP(&watchInterval, "interval", "i", 30, "interval to run checks in minutes")
 	viper.BindPFlags(watchCmd.PersistentFlags())
 
@@ -65,13 +70,14 @@ var watchAllCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		err := checkAndNotifyAll()
+		filters := parseBoxFilters()
+		err := checkAndNotifyAll(filters)
 		if err != nil {
 			return err
 		}
 		for {
 			<-ticker
-			err = checkAndNotifyAll()
+			err = checkAndNotifyAll(filters)
 			if err != nil {
 				// we already did retries, so exiting seems appropriate
 				return err
