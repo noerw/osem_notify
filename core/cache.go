@@ -53,11 +53,14 @@ func (results BoxCheckResults) filterChangedFromCache() BoxCheckResults {
 	return remaining
 }
 
-func updateCache(box *Box, results []CheckResult) error {
+func updateCache(box *Box, results []CheckResult) {
 	for _, result := range results {
 		key := fmt.Sprintf("watchcache.%s.%s", box.Id, result.EventID())
 		cache.Set(key+".laststatus", result.Status)
 	}
+}
+
+func writeCache() error {
 	return cache.WriteConfig()
 }
 

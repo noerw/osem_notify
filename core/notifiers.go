@@ -98,15 +98,20 @@ func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache 
 		// update cache (with /all/ changed results to reset status)
 		if useCache {
 			notifyLog.Debug("updating cache")
-			cacheError := updateCache(box, resultsBox)
-			if cacheError != nil {
-				notifyLog.Error("could not cache notification results: ", cacheError)
-				errs = append(errs, cacheError.Error())
-			}
+			updateCache(box, resultsBox)
 		}
 
 		if len(resultsDue) != 0 {
 			notifyLog.Infof("Sent notification for %s via %s with %v updated issues", box.Name, transport, len(resultsDue))
+		}
+	}
+
+	// persist changes to cache
+	if useCache {
+		err := writeCache()
+		if err != nil {
+			log.Error("could not write cache of notification results: ", err)
+			errs = append(errs, err.Error())
 		}
 	}
 
@@ -147,4 +152,3 @@ func ComposeNotification(box *Box, checks []CheckResult) Notification {
 			time.Now().Round(time.Minute), box.Name, errList, resolvedList, box.Id),
 	}
 }
-

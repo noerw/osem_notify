@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var client = &xmpp.Client{} // @Hacky
+
 // box config required for the XmppNotifier (TransportConfig.Options)
 type XmppNotifier struct {
 	Recipients []string
@@ -21,6 +23,16 @@ func (n XmppNotifier) New(config TransportConfig) (AbstractNotifier, error) {
 		if viper.GetString(key) == "" {
 			return nil, fmt.Errorf("Missing configuration key %s", key)
 		}
+	}
+
+	// establish connection with server once, and share it accross instances
+	// @Hacky
+	if client.JID() == "" {
+		c, err := connectXmpp()
+		if err != nil {
+			return nil, err
+		}
+		client = c
 	}
 
 	// assign configuration to the notifier after ensuring the correct type.
@@ -53,6 +65,26 @@ func (n XmppNotifier) New(config TransportConfig) (AbstractNotifier, error) {
 }
 
 func (n XmppNotifier) Submit(notification Notification) error {
+	if client.JID() == "" {
+		return fmt.Errorf("xmpp client not correctly initialized!")
+	}
+
+	for _, recipient := range n.Recipients {
+		_, err := client.Send(xmpp.Chat{
+			Remote:  recipient,
+			Subject: notification.Subject,
+			Text:    fmt.Sprintf("%s\n\n%s", notification.Subject, notification.Body),
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func connectXmpp() (*xmpp.Client, error) {
 	// :TransportConfSourceHack
 	xmppOpts := xmpp.Options{
 		Host:     viper.GetString("xmpp.host"),
@@ -66,22 +98,5 @@ func (n XmppNotifier) Submit(notification Notification) error {
 		xmppOpts.StartTLS = true
 	}
 
-	client, err := xmppOpts.NewClient()
-	if err != nil {
-		return err
-	}
-
-	for _, recipient := range n.Recipients {
-		_, err = client.Send(xmpp.Chat{
-			Remote:  recipient,
-			Subject: notification.Subject,
-			Text:    fmt.Sprintf("%s\n\n%s", notification.Subject, notification.Body),
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
+	return xmppOpts.NewClient()
 }
