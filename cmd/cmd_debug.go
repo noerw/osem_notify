@@ -51,11 +51,10 @@ var debugCacheCmd = &cobra.Command{
 	},
 }
 
-
 var debugNotificationsCmd = &cobra.Command{
 	Use:   "notifications",
 	Short: "Verify that notifications are working",
-	Long:  `osem_notify debug notifications sends a test notification according
+	Long: `osem_notify debug notifications sends a test notification according
 to healthchecks.default.notifications.options as defined in the config file`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defaultNotifyConf := &core.NotifyConfig{}
@@ -66,11 +65,11 @@ to healthchecks.default.notifications.options as defined in the config file`,
 
 		for transport, notifier := range core.Notifiers {
 			notLog := log.WithField("transport", transport)
-			opts := defaultNotifyConf.Notifications.Options
-			notLog.Infof("testing notifer %s with options %v", transport, opts)
+			opts := defaultNotifyConf.Notifications
+			notLog.Infof("testing notifer %s with options %v", transport, opts.Options)
 			n, err := notifier.New(opts)
 			if err != nil {
-				notLog.Warnf("could not initialize %s notifier. configuration might be missing?", transport)
+				notLog.Warnf("could not initialize %s notifier: %s", transport, err)
 				continue
 			}
 

@@ -39,24 +39,22 @@ func initConfig() {
 }
 
 func validateConfig() {
-	transport := viper.GetString("defaultHealthchecks.notifications.transport")
-	if viper.GetBool("notify") && transport == "email" {
-		if len(viper.GetStringSlice("defaultHealthchecks.notifications.options.recipients")) == 0 {
-			log.Warn("No recipients set up for transport email")
+	if viper.GetString("notify") != "" {
+		if len(viper.GetStringSlice("healthchecks.default.notifications.options.recipients")) == 0 {
+			log.Warn("No default recipients set up for notifications!")
 		}
 
-		emailRequired := []string{
-			viper.GetString("email.host"),
-			viper.GetString("email.port"),
-			viper.GetString("email.user"),
-			viper.GetString("email.pass"),
-			viper.GetString("email.from"),
+		var conf = &core.TransportConfig{}
+		if err := viper.UnmarshalKey("healthchecks.default.notifications", conf); err != nil {
+			log.Error("invalid default notification configuration: ", err)
+			os.Exit(1)
 		}
-		for _, conf := range emailRequired {
-			if conf == "" {
-				log.Error("Default transport set as email, but missing email config")
-				os.Exit(1)
-			}
+
+		// creating a notifier validates its configuration
+		_, err := core.GetNotifier(conf)
+		if err != nil {
+			log.Error(err)
+			os.Exit(1)
 		}
 	}
 }
@@ -85,8 +83,7 @@ func getNotifyConf(boxID string) (*core.NotifyConfig, error) {
 	if keyDefined("healthchecks.default.events") {
 		conf.Events = []core.NotifyEvent{}
 	}
-	err := viper.UnmarshalKey("healthchecks.default", conf)
-	if err != nil {
+	if err := viper.UnmarshalKey("healthchecks.default", conf); err != nil {
 		return nil, err
 	}
 
@@ -94,8 +91,7 @@ func getNotifyConf(boxID string) (*core.NotifyConfig, error) {
 	if keyDefined("healthchecks." + boxID + ".events") {
 		conf.Events = []core.NotifyEvent{}
 	}
-	err = viper.UnmarshalKey("healthchecks."+boxID, conf)
-	if err != nil {
+	if err := viper.UnmarshalKey("healthchecks."+boxID, conf); err != nil {
 		return nil, err
 	}
 

@@ -6,26 +6,34 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
 	xmpp "github.com/mattn/go-xmpp"
+	"github.com/spf13/viper"
 )
 
-// box config required for the XmppNotifier
+// box config required for the XmppNotifier (TransportConfig.Options)
 type XmppNotifier struct {
 	Recipients []string
 }
 
-func (n XmppNotifier) New(config interface{}) (AbstractNotifier, error) {
+func (n XmppNotifier) New(config TransportConfig) (AbstractNotifier, error) {
+	// validate transport configuration
+	// :TransportConfSourceHack
+	requiredConf := []string{"xmpp.user", "xmpp.pass", "xmpp.host", "xmpp.starttls"}
+	for _, key := range requiredConf {
+		if viper.GetString(key) == "" {
+			return nil, fmt.Errorf("Missing configuration key %s", key)
+		}
+	}
+
 	// assign configuration to the notifier after ensuring the correct type.
 	// lesson of this project: golang requires us to fuck around with type
 	// assertions, instead of providing us with proper inheritance.
-
-	asserted, ok := config.(XmppNotifier)
+	asserted, ok := config.Options.(XmppNotifier)
 	if !ok || asserted.Recipients == nil {
 		// config did not contain valid options.
 		// first try fallback: parse result of viper is a map[string]interface{},
 		// which requires a different assertion change
-		asserted2, ok := config.(map[string]interface{})
+		asserted2, ok := config.Options.(map[string]interface{})
 		if ok {
 			asserted3, ok := asserted2["recipients"].([]interface{})
 			if ok {
@@ -79,6 +87,7 @@ func (n XmppNotifier) ComposeNotification(box *Box, checks []CheckResult) Notifi
 }
 
 func (n XmppNotifier) Submit(notification Notification) error {
+	// :TransportConfSourceHack
 	xmppOpts := xmpp.Options{
 		Host:     viper.GetString("xmpp.host"),
 		User:     viper.GetString("xmpp.user"),
@@ -98,9 +107,9 @@ func (n XmppNotifier) Submit(notification Notification) error {
 
 	for _, recipient := range n.Recipients {
 		_, err = client.Send(xmpp.Chat{
-			Remote: recipient,
+			Remote:  recipient,
 			Subject: notification.Subject,
-			Text: fmt.Sprintf("%s\n\n%s", notification.Subject, notification.Body),
+			Text:    fmt.Sprintf("%s\n\n%s", notification.Subject, notification.Body),
 		})
 
 		if err != nil {

@@ -14,7 +14,7 @@ var Notifiers = map[string]AbstractNotifier{
 }
 
 type AbstractNotifier interface {
-	New(config interface{}) (AbstractNotifier, error)
+	New(config TransportConfig) (AbstractNotifier, error)
 	ComposeNotification(box *Box, checks []CheckResult) Notification
 	Submit(notification Notification) error
 }
@@ -27,7 +27,12 @@ type Notification struct {
 //////
 
 func (box Box) GetNotifier() (AbstractNotifier, error) {
-	transport := box.NotifyConf.Notifications.Transport
+	return GetNotifier(&box.NotifyConf.Notifications)
+}
+
+func GetNotifier(config *TransportConfig) (AbstractNotifier, error) {
+	transport := config.Transport
+
 	if transport == "" {
 		return nil, fmt.Errorf("No notification transport provided")
 	}
@@ -37,7 +42,7 @@ func (box Box) GetNotifier() (AbstractNotifier, error) {
 		return nil, fmt.Errorf("%s is not a supported notification transport", transport)
 	}
 
-	return notifier.New(box.NotifyConf.Notifications.Options)
+	return notifier.New(*config)
 }
 
 func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache bool) error {

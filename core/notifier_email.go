@@ -10,22 +10,31 @@ import (
 	"github.com/spf13/viper"
 )
 
-// box config required for the EmailNotifier
+// box config required for the EmailNotifier (TransportConfig.Options)
 type EmailNotifier struct {
 	Recipients []string
 }
 
-func (n EmailNotifier) New(config interface{}) (AbstractNotifier, error) {
+func (n EmailNotifier) New(config TransportConfig) (AbstractNotifier, error) {
+	// validate transport configuration
+	// :TransportConfSourceHack @FIXME: dont get these values from viper, as the core package
+	// should be agnostic of the source of configuration!
+	requiredConf := []string{"email.user", "email.pass", "email.host", "email.port", "email.from"}
+	for _, key := range requiredConf {
+		if viper.GetString(key) == "" {
+			return nil, fmt.Errorf("Missing configuration key %s", key)
+		}
+	}
+
 	// assign configuration to the notifier after ensuring the correct type.
 	// lesson of this project: golang requires us to fuck around with type
 	// assertions, instead of providing us with proper inheritance.
-
-	asserted, ok := config.(EmailNotifier)
+	asserted, ok := config.Options.(EmailNotifier)
 	if !ok || asserted.Recipients == nil {
 		// config did not contain valid options.
 		// first try fallback: parse result of viper is a map[string]interface{},
 		// which requires a different assertion change
-		asserted2, ok := config.(map[string]interface{})
+		asserted2, ok := config.Options.(map[string]interface{})
 		if ok {
 			asserted3, ok := asserted2["recipients"].([]interface{})
 			if ok {
@@ -79,6 +88,7 @@ func (n EmailNotifier) ComposeNotification(box *Box, checks []CheckResult) Notif
 }
 
 func (n EmailNotifier) Submit(notification Notification) error {
+	// :TransportConfSourceHack
 	auth := smtp.PlainAuth(
 		"",
 		viper.GetString("email.user"),
