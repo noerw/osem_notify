@@ -84,9 +84,10 @@ func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache 
 
 			var submitErr error
 			submitErr = notifier.Submit(notification)
-			for retry := 1; submitErr != nil && retry < 3; retry++ {
+			for retry := 0; submitErr != nil && retry < 2; retry++ {
+				notifyLog.Warnf("sending notification failed (retry %v): %v", retry, submitErr)
 				time.Sleep(10 * time.Second)
-				notifyLog.Infof("trying to submit (retry %v)", retry)
+				submitErr = notifier.Submit(notification)
 			}
 			if submitErr != nil {
 				notifyLog.Error(submitErr)
