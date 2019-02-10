@@ -15,7 +15,6 @@ var Notifiers = map[string]AbstractNotifier{
 
 type AbstractNotifier interface {
 	New(config TransportConfig) (AbstractNotifier, error)
-	ComposeNotification(box *Box, checks []CheckResult) Notification
 	Submit(notification Notification) error
 }
 
@@ -81,7 +80,7 @@ func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache 
 				continue
 			}
 
-			notification := notifier.ComposeNotification(box, resultsDue)
+			notification := ComposeNotification(box, resultsDue)
 
 			var submitErr error
 			submitErr = notifier.Submit(notification)
@@ -116,3 +115,36 @@ func (results BoxCheckResults) SendNotifications(notifyTypes []string, useCache 
 	}
 	return nil
 }
+
+func ComposeNotification(box *Box, checks []CheckResult) Notification {
+	errTexts := []string{}
+	resolvedTexts := []string{}
+	for _, check := range checks {
+		if check.Status == CheckErr {
+			errTexts = append(errTexts, check.String())
+		} else {
+			resolvedTexts = append(resolvedTexts, check.String())
+		}
+	}
+
+	var (
+		resolved     string
+		resolvedList string
+		errList      string
+	)
+	if len(resolvedTexts) != 0 {
+		resolvedList = fmt.Sprintf("Resolved issue(s):\n\n%s\n\n", strings.Join(resolvedTexts, "\n"))
+	}
+	if len(errTexts) != 0 {
+		errList = fmt.Sprintf("New issue(s):\n\n%s\n\n", strings.Join(errTexts, "\n"))
+	} else {
+		resolved = "resolved "
+	}
+
+	return Notification{
+		Subject: fmt.Sprintf("Issues %swith your box \"%s\" on opensensemap.org!", resolved, box.Name),
+		Body: fmt.Sprintf("A check at %s identified the following updates for your box \"%s\":\n\n%s%sYou may visit https://opensensemap.org/explore/%s for more details.\n\n--\nSent automatically by osem_notify (https://github.com/noerw/osem_notify)",
+			time.Now().Round(time.Minute), box.Name, errList, resolvedList, box.Id),
+	}
+}
+
